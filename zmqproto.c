@@ -10,6 +10,8 @@
 #include <netdb.h>
 
 #define MSG_SIZE 6
+#define MAX_FLP 1000
+#define MAX_EPN 1000
 
 //FIXME: Open a second socket to directly communicate with the EPNs
 void *FLP (void *context)
@@ -53,6 +55,11 @@ void *EPN (void *context)
   zmq_ctx_destroy (context);
 }
 
+int compare(int *x, int *y) 
+{   
+   return (*x - *y); 
+}
+
 //FIXME: store ip addresses on a (binary) list
 int main(int argc, char** argv)
 {
@@ -66,7 +73,12 @@ int main(int argc, char** argv)
   
   if ( numFLP <= 0 || numEPN <= 0 ) {
    printf("Error: At least 1 FLP and EPN needed\n");
-    return -1;
+   return -1;
+  }
+  
+  if ( numFLP > MAX_FLP || numEPN > MAX_EPN ) {
+   printf("Error: Too many FLPs or EPNs\n");
+   return -1;
   }
   
   //Initialize zmq
@@ -104,9 +116,16 @@ int main(int argc, char** argv)
   
   zmq_msg_t msg;
   
+  //Initialize two IP arrays, one for FLPs and one for EPNs
+  char *iparrayFLP[MAX_FLP] = { 0 };
+  char *iparrayEPN[MAX_EPN] = { 0 };
+  
+  //Number of addresses on the list of FLPs and EPNs
+  size_t elemsFLP = 0;
+  size_t elemsEPN = 0;
+  
   //Wait on messages from both sockets,
   //FIXME: Poll the incoming messages from the sockets
-  //FIXME: Implement two IP arrays to store the addresses of the FLPs and EPNs
   while (1) {
     //Frontend
     rc = zmq_msg_init(&msg);
@@ -125,6 +144,11 @@ int main(int argc, char** argv)
     assert (rc == 0);
     
     printf("Received message from host %s\n", host);
+
+    //If the IP address is not found, it will be appended to the list using lsearch
+    char *FLPIPAddress = host;
+    
+    lsearch (&FLPIPAddress, &iparrayFLP, &elemsFLP, sizeof (int), (int(*) (const void *, const void *)) compare);
     
     //Backend
     rc = zmq_msg_init(&msg);
@@ -144,11 +168,29 @@ int main(int argc, char** argv)
     assert (rc == 0);
     
     printf("Received message from host %s\n", host);
+    
+    //If the IP address is not found, it will be appended to the list using lsearch
+    char *EPNIPAddress = host;
+    
+    lsearch (&EPNIPAddress, &iparrayEPN, &elemsEPN, sizeof (int), (int(*) (const void *, const void *)) compare);
+    
+    printf("Number of connected nodes: FLPs: %i EPNs: %i\n", elemsFLP, elemsEPN);
   }
   
   zmq_close (frontend);
   zmq_close (backend);
   zmq_ctx_destroy (context);
+  
+  int j = 0, k = 0;
+  while (j < sizeof(iparrayFLP))
+  {
+    free(iparrayFLP[j]);
+  }
+  
+  while (k < sizeof(iparrayEPN))
+  {
+    free(iparrayEPN[k]);
+  }
   
   return 0;
 }
