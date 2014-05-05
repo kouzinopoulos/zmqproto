@@ -20,7 +20,7 @@ include_directories(${ZMQPATH}/include)
 #find_package(ZeroMQ)
 
 #Define the list of the source files
-set(SOURCES 0mqproto.c 0mqproto.h ${ZMQPATH}/include/zmq.h)
+set(SOURCES 0mqproto.c zhelpers.h ${ZMQPATH}/include/zmq.h)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
