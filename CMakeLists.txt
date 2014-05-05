@@ -5,7 +5,7 @@ project(0mqproto)
 #Set the version of the software
 set (VERSION_MAJOR 0)
 set (VERSION_MINOR 0)
-set (VERSION_PATCH 2)
+set (VERSION_PATCH 3)
 
 #ZeroMQ is part of the external packages of FairRoot.
 IF(NOT DEFINED ENV{ZMQPATH})
@@ -20,7 +20,7 @@ include_directories(${ZMQPATH}/include)
 #find_package(ZeroMQ)
 
 #Define the list of the source files
-set(SOURCES 0mqproto.cxx 0mqproto.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES 0mqproto.c 0mqproto.h ${ZMQPATH}/include/zmq.h)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
@@ -33,7 +33,5 @@ target_link_libraries (0mqproto zmq pthread)
 
 #append the custom linker flags to the corresponding cmake variables
 #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
-
-
 
 install(TARGETS 0mqproto DESTINATION bin)
