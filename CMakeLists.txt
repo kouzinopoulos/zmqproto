@@ -19,19 +19,25 @@ include_directories(${ZMQPATH}/include)
 
 #find_package(ZeroMQ)
 
-#Define the list of the source files
-set(SOURCES zmqproto.c zhelpers.h ${ZMQPATH}/include/zmq.h)
+#Define the list of source files
+set(BROKERSOURCES broker.c zhelpers.h ${ZMQPATH}/include/zmq.h)
+set(FLPCLIENTSOURCES flpclient.c zhelpers.h ${ZMQPATH}/include/zmq.h)
+set(EPNCLIENTSOURCES epnclient.c zhelpers.h ${ZMQPATH}/include/zmq.h)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
 
-#Compile the executable
-add_executable(zmqproto ${SOURCES})
+#Compile the executables
+add_executable(broker ${BROKERSOURCES})
+add_executable(flpclient ${FLPCLIENTSOURCES})
+add_executable(epnclient ${EPNCLIENTSOURCES})
 
-#Link the executable
-target_link_libraries (zmqproto zmq pthread)
+#Link the executables
+target_link_libraries (broker zmq pthread)
+target_link_libraries (flpclient zmq pthread)
+target_link_libraries (epnclient zmq pthread)
 
-#append the custom linker flags to the corresponding cmake variables
-#SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
-
-install(TARGETS zmqproto DESTINATION bin)
+#Install the executables
+install(TARGETS broker DESTINATION bin)
+install(TARGETS flpclient DESTINATION bin)
+install(TARGETS epnclient DESTINATION bin)
