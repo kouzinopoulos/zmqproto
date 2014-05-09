@@ -9,8 +9,7 @@
 
 #include "zmqproto.h"
 
-//Needed for strings
-using namespace std;
+
 /*
 int utilities_get_my_ip (const char * device)
 {
@@ -27,6 +26,7 @@ int utilities_get_my_ip (const char * device)
   return ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
 }
 */
+
 char *determine_ip()
 {
   FILE *fp = popen("ifconfig", "r");
@@ -61,6 +61,10 @@ void *publisher (void *arg)
 {
   zmq::context_t *context = (zmq::context_t *) arg;
   
+  pthread_t self_id = pthread_self();
+  
+  int counter = 0;
+  
   //Initialize publisher
   zmq::socket_t publisher(*context, ZMQ_PUSH);
   publisher.connect("tcp://localhost:5556");
@@ -70,6 +74,8 @@ void *publisher (void *arg)
     zmq::message_t publisherMessage (5);
     memcpy ((void *) publisherMessage.data(), "World", 5);
     publisher.send (publisherMessage);
+    
+    cout<<self_id<<" - "<<determine_ip()<<" -> Sent message "<<counter++<<endl;
     
     sleep(1);
   }
@@ -81,6 +87,8 @@ void *subscriber (void *arg)
   
   pthread_t self_id = pthread_self();
   
+  int counter = 0;
+  
   //Initialize subscriber
   zmq::socket_t subscriber(*context, ZMQ_PULL);
   subscriber.connect("tcp://localhost:5558");
@@ -90,27 +98,9 @@ void *subscriber (void *arg)
     zmq::message_t subscriberMessage;
     subscriber.recv (&subscriberMessage);
   
-    printf("%u: Received message\n", self_id);
+    cout<<self_id<<" - "<<determine_ip()<<" <- Received message "<<counter++<<endl;
   }
 }
-/*
-void *proxy (void *arg)
-{
-  zmq::context_t *context = (zmq::context_t *) arg;
-  
-  pthread_t self_id = pthread_self();
-  
-  //Initialize proxy
-  zmq::socket_t frontend (*context, ZMQ_PULL);
-  frontend.bind("tcp://*:5556");
-
-  zmq::socket_t backend (*context, ZMQ_PUSH);
-  backend.bind("tcp://*:5558");
-  
-  zmq_proxy (frontend, backend, NULL);
-  
-}
-*/
 
 int main(int argc, char** argv)
 {
@@ -118,8 +108,6 @@ int main(int argc, char** argv)
     cout << "Usage: zmqproto\tnumFLP\tnumEPN" << endl;
     return 1;
   }
-
-  cout<<determine_ip()<<endl;
   
   int numFLP = atoi(argv[1]);
   int numEPN = atoi(argv[2]);
@@ -131,10 +119,6 @@ int main(int argc, char** argv)
   
   //Initialize zmq
   zmq::context_t context (1);
-
-  // Start proxy
-  // pthread_t proxyThread;
-  // pthread_create (&proxyThread, NULL, proxy, &context);
     
   //Start publisher on a new thread
   for ( int i = 0; i < numFLP; i++ ) {
@@ -149,13 +133,75 @@ int main(int argc, char** argv)
   }
   
   //Block on proxy
-  zmq::socket_t frontend (context, ZMQ_PULL);
+  zmq::socket_t frontend (context, ZMQ_ROUTER);
   frontend.bind("tcp://*:5556");
 
-  zmq::socket_t backend (context, ZMQ_PUSH);
+  zmq::socket_t backend (context, ZMQ_DEALER);
   backend.bind("tcp://*:5558");
+
+  //  Initialize poll set
+  zmq::pollitem_t items [] = {
+    { frontend, 0, ZMQ_POLLIN, 0 },
+    { backend,  0, ZMQ_POLLIN, 0 }
+  };
   
-  zmq_proxy (frontend, backend, NULL);
+  vector<string>ipVector;
+  vector<string>::iterator ipVectorIter;
+
+  cout<<"Vector size: "<<ipVector.size()<<endl;
+  
+  for ( long vectorIndex = 0; vectorIndex < (long)ipVector.size(); vectorIndex++ ) {
+    cout <<vectorIndex<<" - "<<ipVector.at(vectorIndex)<<endl;
+  }
+  
+  //  Switch messages between sockets
+  while (1) {
+    zmq::message_t message;
+    int64_t more;           //  Multipart detection
+
+    zmq::poll (&items [0], 2, -1);
+
+    if (items [0].revents & ZMQ_POLLIN) {
+      while (1) {
+        //  Process all parts of the message
+        frontend.recv(&message);
+        
+        size_t more_size = sizeof (more);
+        frontend.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+        backend.send(message, more? ZMQ_SNDMORE: 0);
+
+        if (!more)
+          break; //  Last message part
+      }
+    }
+    if (items [1].revents & ZMQ_POLLIN) {
+      while (1) {
+        //  Process all parts of the message
+        backend.recv(&message);
+        
+        size_t more_size = sizeof (more);
+        backend.getsockopt(ZMQ_RCVMORE, &more, &more_size);
+        frontend.send(message, more? ZMQ_SNDMORE: 0);
+        
+        if (!more)
+          break; //  Last message part
+      }
+    }
+    
+    //Add the IP to the IP vector but only if it is not already in
+    ipVectorIter = find (ipVector.begin(), ipVector.end(), determine_ip());
+    
+    if ( ipVectorIter == ipVector.end() ) {
+      //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
+      ipVector.push_back(determine_ip());
+    }
+    
+    cout<<"Vector size: "<<ipVector.size()<<endl;
+    
+    for ( long vectorIndex = 0; vectorIndex < (long)ipVector.size(); vectorIndex++ ) {
+      cout <<vectorIndex<<" - "<<ipVector.at(vectorIndex)<<endl;
+    }
+  }
   
   return 0;
 }
