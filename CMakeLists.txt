@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 
-project(0mqproto)
+project(zmqproto)
 
 #Set the version of the software
 set (VERSION_MAJOR 0)
@@ -20,20 +20,20 @@ include_directories(${ZMQPATH}/include)
 #find_package(ZeroMQ)
 
 #Define the list of the source files
-set(SOURCES 0mqproto.cxx 0mqproto.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
 
 #Compile the executable
-add_executable(0mqproto ${SOURCES})
+add_executable(zmqproto ${SOURCES})
 
 #Link the executable
-target_link_libraries (0mqproto zmq pthread)
+target_link_libraries (zmqproto zmq pthread)
 
 #append the custom linker flags to the corresponding cmake variables
 #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
 
 
 
-install(TARGETS 0mqproto DESTINATION bin)
+install(TARGETS zmqproto DESTINATION bin)

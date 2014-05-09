@@ -7,7 +7,7 @@
 #include <net/if.h>
 #include <netinet/in.h>
 
-#include "0mqproto.h"
+#include "zmqproto.h"
 
 //Needed for strings
 using namespace std;
@@ -115,7 +115,7 @@ void *proxy (void *arg)
 int main(int argc, char** argv)
 {
   if ( argc != 3 ) {
-    cout << "Usage: 0mqproto\tnumFLP\tnumEPN" << endl;
+    cout << "Usage: zmqproto\tnumFLP\tnumEPN" << endl;
     return 1;
   }
 

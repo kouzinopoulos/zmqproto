@@ -1,5 +1,5 @@
-#ifndef OMQPROTO_H
-#define OMQPROTO_H
+#ifndef ZMQPROTO_H
+#define ZMQPROTO_H
 
 class Omqproto
 {
