@@ -20,7 +20,7 @@ include_directories(${ZMQPATH}/include)
 #find_package(ZeroMQ)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoSubscriber.cxx zmqprotoSubscriber.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
@@ -33,7 +33,5 @@ target_link_libraries (zmqproto zmq pthread)
 
 #append the custom linker flags to the corresponding cmake variables
 #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
-
-
 
 install(TARGETS zmqproto DESTINATION bin)
