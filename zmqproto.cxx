@@ -63,19 +63,31 @@ void *publisher (void *arg)
   
   pthread_t self_id = pthread_self();
   
+  int fEventSize = 10000;
+  
+  Content* payload = new Content[fEventSize];
+  for (int i = 0; i < fEventSize; ++i) {
+        (&payload[i])->id = 0;
+        (&payload[i])->x = rand() % 100 + 1;
+        (&payload[i])->y = rand() % 100 + 1;
+        (&payload[i])->z = rand() % 100 + 1;
+        (&payload[i])->a = (rand() % 100 + 1) / (rand() % 100 + 1);
+        (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
+  }
+  
   int counter = 0;
   
-  //Initialize publisher
+  //Initialize publisher socket
   zmq::socket_t publisher(*context, ZMQ_PUSH);
   publisher.connect("tcp://localhost:5556");
   
   //Send messages to the proxy, 1 per second
   while (1) {
-    zmq::message_t publisherMessage (5);
-    memcpy ((void *) publisherMessage.data(), "World", 5);
-    publisher.send (publisherMessage);
+    zmq::message_t msg (fEventSize * sizeof(Content));
+    memcpy(msg.data(), payload, fEventSize * sizeof(Content));
+    publisher.send (msg);
     
-    cout<<self_id<<" - "<<determine_ip()<<" -> Sent message "<<counter++<<endl;
+    cout << self_id << " " << determine_ip() << " -> Sent message " << counter++ << endl;
     
     sleep(1);
   }
@@ -88,17 +100,21 @@ void *subscriber (void *arg)
   pthread_t self_id = pthread_self();
   
   int counter = 0;
+  int fEventSize = 10000;
   
-  //Initialize subscriber
+  //Initialize subscriber socket
   zmq::socket_t subscriber(*context, ZMQ_PULL);
   subscriber.connect("tcp://localhost:5558");
   
   //Receive messages from the subscriber
   while (1) {
-    zmq::message_t subscriberMessage;
-    subscriber.recv (&subscriberMessage);
-  
-    cout<<self_id<<" - "<<determine_ip()<<" <- Received message "<<counter++<<endl;
+    zmq::message_t msg (fEventSize * sizeof(Content));
+    subscriber.recv (&msg); // First, discard the Dealer header (http://stackoverflow.com/questions/16692807/)
+    subscriber.recv (&msg);
+    
+    Content* input = reinterpret_cast<Content*>(msg.data());
+
+    cout << self_id << " " << determine_ip() << " " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << " Received message " << counter++ << endl;
   }
 }
 
