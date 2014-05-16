@@ -1,4 +1,5 @@
 #include <zmq.hpp>
+#include <msgpack.hpp>
 
 #include <iostream>
 #include <unistd.h>
@@ -12,8 +13,14 @@ void *zmqprotoPublisher::Run(void *arg)
 {
   zmq::context_t *context = (zmq::context_t *) arg;
   
-  pthread_t self_id = pthread_self();
+  //Initialize socket to pull from the directory
+  zmq::socket_t pullFromDirectory(*context, ZMQ_PULL);
+  pullFromDirectory.connect("tcp://127.0.0.1:5556");
   
+  //Initialize socket to push to the EPN
+  zmq::socket_t pushToEPN(*context, ZMQ_PUSH);
+  
+  //Initialize dummy data
   int fEventSize = 10000;
   
   Content* payload = new Content[fEventSize];
@@ -26,21 +33,34 @@ void *zmqprotoPublisher::Run(void *arg)
         (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
   }
   
-  int counter = 0;
+  char ipAddr[30];
   
-  //Initialize publisher socket
-  zmq::socket_t publisher(*context, ZMQ_PUSH);
-  publisher.connect("tcp://localhost:5556");
-  
-  //Send messages to the proxy, 1 per second
   while (1) {
-    zmq::message_t msg (fEventSize * sizeof(Content));
-    memcpy(msg.data(), payload, fEventSize * sizeof(Content));
-    publisher.send (msg);
+    zmq::message_t msg;
+    pullFromDirectory.recv(&msg);
     
-    cout << self_id << " " << determine_ip() << " -> Sent message " << counter++ << endl;
+    // Deserialize received message
+    msgpack::unpacked unpacked;
+    msgpack::unpack(&unpacked, reinterpret_cast<char*>(msg.data()), msg.size());
+    msgpack::object obj = unpacked.get();
+
+    std::vector<string> data;
+    obj.convert(&data);
     
-    sleep(1);
+    cout << "FLP: Received a vector with " << data.size() << " IPs from the directory node" << endl;
+    
+    //Connect to each received IP, send payload
+    for (int i = 0; i < data.size(); i++) {
+      snprintf(ipAddr, 30, "tcp://%s:5559", data.at(i).c_str());
+      pushToEPN.connect(ipAddr);
+      
+      zmq::message_t msgToEPN (fEventSize * sizeof(Content));
+      memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
+      pushToEPN.send (msg);
+      
+      cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
+    }
+
+    sleep(10);
   }
 }
-

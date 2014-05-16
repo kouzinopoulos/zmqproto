@@ -1,6 +1,7 @@
 #include <zmq.hpp>
 
 #include <iostream>
+#include <unistd.h>
 
 #include "zmqprotoCommon.h"
 #include "zmqprotoSubscriber.h"
@@ -13,21 +14,29 @@ void *zmqprotoSubscriber::Run(void *arg)
   
   pthread_t self_id = pthread_self();
   
-  int counter = 0;
   int fEventSize = 10000;
   
   //Initialize subscriber socket
-  zmq::socket_t subscriber(*context, ZMQ_PULL);
-  subscriber.connect("tcp://localhost:5558");
+  zmq::socket_t pushToDirectory(*context, ZMQ_PUSH);
+  pushToDirectory.connect("tcp://127.0.0.1:5558");
   
-  //Receive messages from the subscriber
+  //Initialize socket to receive from FLP
+  zmq::socket_t pullFromFLP(*context, ZMQ_PULL);
+  
+  pullFromFLP.bind("tcp://*:5560");
+  
   while (1) {
-    zmq::message_t msg (fEventSize * sizeof(Content));
-    subscriber.recv (&msg); // First, discard the DEALER header (see http://stackoverflow.com/questions/16692807/)
-    subscriber.recv (&msg);
+    //Send a ping to the directory, 1 per second
+    zmq::message_t msg(20);
+    memcpy(msg.data(), determine_ip(), 20);
+    pushToDirectory.send (msg);
     
-    Content* input = reinterpret_cast<Content*>(msg.data());
-
-    cout << self_id << " " << determine_ip() << " <- Recv message " << counter++ << " " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl;
+    //Receive payload from the FLPs
+    zmq::message_t msgFromFLP(fEventSize * sizeof(Content));
+    pullFromFLP.recv (&msgFromFLP);
+    
+    cout << "EPN: received payload from FLP" << endl;
+    
+    sleep(1);
   }
 }

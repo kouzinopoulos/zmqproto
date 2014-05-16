@@ -1,4 +1,5 @@
 #include <zmq.hpp>
+#include <msgpack.hpp>
 
 #include <iostream>
 #include <vector>
@@ -11,7 +12,6 @@
 
 #include "zmqproto.h"
 #include "zmqprotoPublisher.h"
-#include "zmqprotoProxy.h"
 #include "zmqprotoSubscriber.h"
 
 int main(int argc, char** argv)
@@ -44,71 +44,45 @@ int main(int argc, char** argv)
     pthread_create (&subscriberThread, NULL, zmqprotoSubscriber::Run, &context);
   }
   
-  //Block on proxy
-  zmq::socket_t frontend (context, ZMQ_ROUTER);
-  frontend.bind("tcp://*:5556");
-
-  zmq::socket_t backend (context, ZMQ_DEALER);
-  backend.bind("tcp://*:5558");
-
-  //  Initialize poll set
-  zmq::pollitem_t items [] = {
-    { frontend, 0, ZMQ_POLLIN, 0 },
-    { backend,  0, ZMQ_POLLIN, 0 }
-  };
-  
+  //Initialize the IP vector
   vector<string>ipVector;
   vector<string>::iterator ipVectorIter;
+  
+  //Setup the directory sockets
+  zmq::socket_t frontend (context, ZMQ_PUSH);
+  frontend.bind("tcp://*:5556");
 
-  //  Switch messages between sockets
+  zmq::socket_t backend (context, ZMQ_PULL);
+  backend.bind("tcp://*:5558");
+  
   while (1) {
-    cout<<"Vector size: "<<ipVector.size()<<endl;
+    //Listen for incoming connections
+    zmq::message_t subMsg (20 * sizeof(char));
+    backend.recv(&subMsg);
     
-    for ( long vectorIndex = 0; vectorIndex < (long)ipVector.size(); vectorIndex++ ) {
-      cout <<vectorIndex<<" - "<<ipVector.at(vectorIndex)<<endl;
-    }
-
-    zmq::message_t message;
-    int64_t more;           //  Multipart detection
-
-    zmq::poll (&items [0], 2, -1);
-
-    if (items [0].revents & ZMQ_POLLIN) {
-      while (1) {
-        //  Process all parts of the message
-        frontend.recv(&message);
-        
-        size_t more_size = sizeof (more);
-        frontend.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-        backend.send(message, more? ZMQ_SNDMORE: 0);
-
-        if (!more)
-          break; //  Last message part
-      }
-    }
-    if (items [1].revents & ZMQ_POLLIN) {
-      while (1) {
-        //  Process all parts of the message
-        backend.recv(&message);
-        
-        size_t more_size = sizeof (more);
-        backend.getsockopt(ZMQ_RCVMORE, &more, &more_size);
-        frontend.send(message, more? ZMQ_SNDMORE: 0);
-        
-        if (!more)
-          break; //  Last message part
-      }
-    }
+    //cout << reinterpret_cast<char *>(subMsg.data()) <<endl;
+    cout << "Directory: Received a ping from EPN" << endl;
     
-    //Add the IP to the IP vector but only if it is not already in
-    ipVectorIter = find (ipVector.begin(), ipVector.end(), zmqprotoCommon::determine_ip());
+    //If the IP is unknown, add it to the IP vector
+    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(subMsg.data()));
     
     if ( ipVectorIter == ipVector.end() ) {
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
-      ipVector.push_back(zmqprotoCommon::determine_ip());
+      ipVector.push_back(reinterpret_cast<char *>(subMsg.data()));
+      
+      cout << "Directory: Unknown IP, adding it to vector. Total IPs: "<< ipVector.size()<<endl;
     }
+    
+    //Serialize the vector using msgpack
+    msgpack::sbuffer sbuf;
+    msgpack::pack(sbuf, ipVector);
+    zmq::message_t pubMsg(sbuf.size());
+    memcpy(pubMsg.data(), sbuf.data(), sbuf.size());
+        
+    //Publish the serialized vector to all connected FLPs
+    frontend.send(pubMsg);
   }
- 
+  
   return 0;
 }
 

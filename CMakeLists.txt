@@ -15,21 +15,27 @@ ENDIF(NOT DEFINED ENV{ZMQPATH})
 STRING(REGEX MATCHALL "[^:]+" PATH $ENV{PATH})
 SET(ZMQPATH $ENV{ZMQPATH})
 
-include_directories(${ZMQPATH}/include)
+IF(NOT DEFINED ENV{MSGPACKPATH})
+  MESSAGE(FATAL_ERROR "Please set MSGPACKPATH to the directory where MessagePack is installed and execute cmake again.")
+ENDIF(NOT DEFINED ENV{MSGPACKPATH})
 
-#find_package(ZeroMQ)
+STRING(REGEX MATCHALL "[^:]+" PATH $ENV{PATH})
+SET(MSGPACKPATH $ENV{MSGPACKPATH})
+
+include_directories(${ZMQPATH}/include ${MSGPACKPATH}/include)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoSubscriber.cxx zmqprotoSubscriber.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoSubscriber.cxx zmqprotoSubscriber.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
+link_directories(${MSGPACKPATH}/lib)
 
 #Compile the executable
 add_executable(zmqproto ${SOURCES})
 
 #Link the executable
-target_link_libraries (zmqproto zmq pthread)
+target_link_libraries (zmqproto zmq msgpack pthread)
 
 #append the custom linker flags to the corresponding cmake variables
 #SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
