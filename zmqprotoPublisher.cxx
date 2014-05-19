@@ -11,12 +11,21 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+  if ( argc != 2 ) {
+    cout << "Usage: "<<argv[0]<<" directoryIPAddr" << endl;
+    return 1;
+  }
+  
+  char EPNIPAddr[30], directoryIPAddr[30];
+  
+  snprintf(directoryIPAddr, 30, "tcp://%s:5556", argv[1]);
+    
   //Initialize zmq
   zmq::context_t context (1);
   
   //Initialize socket to pull from the directory
   zmq::socket_t pullFromDirectory(context, ZMQ_PULL);
-  pullFromDirectory.connect("tcp://127.0.0.1:5556");
+  pullFromDirectory.connect(directoryIPAddr);
   
   //Initialize socket to push to the EPN
   zmq::socket_t pushToEPN(context, ZMQ_PUSH);
@@ -34,8 +43,6 @@ int main(int argc, char** argv)
         (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
   }
   
-  char ipAddr[30];
-  
   while (1) {
     zmq::message_t msg;
     pullFromDirectory.recv(&msg);
@@ -52,8 +59,8 @@ int main(int argc, char** argv)
     
     //Connect to each received IP, send payload
     for (int i = 0; i < data.size(); i++) {
-      snprintf(ipAddr, 30, "tcp://%s:5560", data.at(i).c_str());
-      pushToEPN.connect(ipAddr);
+      snprintf(EPNIPAddr, 30, "tcp://%s:5560", data.at(i).c_str());
+      pushToEPN.connect(EPNIPAddr);
       
       zmq::message_t msgToEPN (fEventSize * sizeof(Content));
       memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));

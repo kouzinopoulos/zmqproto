@@ -10,6 +10,15 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
+  if ( argc != 2 ) {
+    cout << "Usage: "<<argv[0]<<" directoryIPAddr" << endl;
+    return 1;
+  }
+  
+  char directoryIPAddr[30];
+  
+  snprintf(directoryIPAddr, 30, "tcp://%s:5558", argv[1]);
+  
   zmq::context_t context (1);
   
   int fEventSize = 10000;
@@ -17,7 +26,7 @@ int main(int argc, char** argv)
   
   //Initialize subscriber socket
   zmq::socket_t pushToDirectory(context, ZMQ_PUSH);
-  pushToDirectory.connect("tcp://127.0.0.1:5558");
+  pushToDirectory.connect(directoryIPAddr);
   
   //Initialize socket to receive from FLP
   zmq::socket_t pullFromFLP(context, ZMQ_PULL);
