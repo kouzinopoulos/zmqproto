@@ -44,12 +44,12 @@ int main(int argc, char** argv)
   }
   
   while (1) {
-    zmq::message_t msg;
-    pullFromDirectory.recv(&msg);
+    zmq::message_t msgFromDirectory;
+    pullFromDirectory.recv(&msgFromDirectory);
     
     // Deserialize received message
     msgpack::unpacked unpacked;
-    msgpack::unpack(&unpacked, reinterpret_cast<char*>(msg.data()), msg.size());
+    msgpack::unpack(&unpacked, reinterpret_cast<char*>(msgFromDirectory.data()), msgFromDirectory.size());
     msgpack::object obj = unpacked.get();
 
     std::vector<string> data;
@@ -64,9 +64,11 @@ int main(int argc, char** argv)
       
       zmq::message_t msgToEPN (fEventSize * sizeof(Content));
       memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
-      pushToEPN.send (msg);
+      pushToEPN.send (msgToEPN);
       
       cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
+      cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
+      cout << "FLP: message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl;
     }
 
     sleep(1);

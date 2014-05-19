@@ -30,22 +30,25 @@ int main(int argc, char** argv)
   
   //Initialize socket to receive from FLP
   zmq::socket_t pullFromFLP(context, ZMQ_PULL);
-  
   pullFromFLP.bind("tcp://*:5560");
   
   while (1) {
     //Send a ping to the directory, 1 per second
-    zmq::message_t msg(20);
-    memcpy(msg.data(), localIP, 20);
-    pushToDirectory.send (msg);
+    zmq::message_t msgToDirectory(20);
+    memcpy(msgToDirectory.data(), localIP, 20);
+    pushToDirectory.send (msgToDirectory);
     
     cout << "EPN: Sent a ping to the directory" << endl;
     
     //Receive payload from the FLPs
-    zmq::message_t msgFromFLP(fEventSize * sizeof(Content));
+    zmq::message_t msgFromFLP;
     pullFromFLP.recv (&msgFromFLP);
     
-    cout << "EPN: received payload from FLP" << endl;
+    cout << "EPN: Received payload from FLP" << endl;
+    cout << "EPN: Message size: " << msgFromFLP.size() << " bytes." << endl;
+    
+    Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
+    cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl;
     
     sleep(1);
   }
