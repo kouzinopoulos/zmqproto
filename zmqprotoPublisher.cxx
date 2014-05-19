@@ -51,7 +51,7 @@ void *zmqprotoPublisher::Run(void *arg)
     
     //Connect to each received IP, send payload
     for (int i = 0; i < data.size(); i++) {
-      snprintf(ipAddr, 30, "tcp://%s:5559", data.at(i).c_str());
+      snprintf(ipAddr, 30, "tcp://%s:5560", data.at(i).c_str());
       pushToEPN.connect(ipAddr);
       
       zmq::message_t msgToEPN (fEventSize * sizeof(Content));
