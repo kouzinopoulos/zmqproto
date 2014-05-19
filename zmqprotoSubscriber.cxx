@@ -13,6 +13,7 @@ int main(int argc, char** argv)
   zmq::context_t context (1);
   
   int fEventSize = 10000;
+  char *localIP = zmqprotoCommon::determine_ip();
   
   //Initialize subscriber socket
   zmq::socket_t pushToDirectory(context, ZMQ_PUSH);
@@ -26,7 +27,7 @@ int main(int argc, char** argv)
   while (1) {
     //Send a ping to the directory, 1 per second
     zmq::message_t msg(20);
-    memcpy(msg.data(), zmqprotoCommon::determine_ip(), 20);
+    memcpy(msg.data(), localIP, 20);
     pushToDirectory.send (msg);
     
     cout << "EPN: Sent a ping to the directory" << endl;
