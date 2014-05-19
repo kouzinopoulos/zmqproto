@@ -3,9 +3,6 @@
 
 class zmqprotoPublisher : public zmqprotoCommon
 {
-  public:
-    static void *Run(void *arg);
-    
 };
 
 #endif

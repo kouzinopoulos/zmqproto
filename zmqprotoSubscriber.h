@@ -3,8 +3,6 @@
 
 class zmqprotoSubscriber : public zmqprotoCommon
 {
-  public:
-    static void *Run(void *arg);
 };
 
 #endif

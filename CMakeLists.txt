@@ -25,19 +25,25 @@ SET(MSGPACKPATH $ENV{MSGPACKPATH})
 include_directories(${ZMQPATH}/include ${MSGPACKPATH}/include)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoSubscriber.cxx zmqprotoSubscriber.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
 link_directories(${MSGPACKPATH}/lib)
 
-#Compile the executable
-add_executable(zmqproto ${SOURCES})
+#Compile the executables
+add_executable(zmqprotodirectory ${SOURCES})
+add_executable(zmqprotoflp ${FLPSOURCES})
+add_executable(zmqprotoepn ${EPNSOURCES})
 
-#Link the executable
-target_link_libraries (zmqproto zmq msgpack pthread)
+#Link the executables
+target_link_libraries (zmqprotodirectory zmq msgpack)
+target_link_libraries (zmqprotoflp zmq msgpack pthread)
+target_link_libraries (zmqprotoepn zmq pthread)
 
-#append the custom linker flags to the corresponding cmake variables
-#SET( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${PROJECT_LINK_FLAGS}")
-
-install(TARGETS zmqproto DESTINATION bin)
+#Install the executables
+install(TARGETS zmqprotodirectory DESTINATION bin)
+install(TARGETS zmqprotoflp DESTINATION bin)
+install(TARGETS zmqprotoepn DESTINATION bin)

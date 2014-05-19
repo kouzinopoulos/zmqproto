@@ -11,38 +11,11 @@
 #include <netinet/in.h>
 
 #include "zmqproto.h"
-#include "zmqprotoPublisher.h"
-#include "zmqprotoSubscriber.h"
 
 int main(int argc, char** argv)
 {
-  if ( argc != 3 ) {
-    cout << "Usage: zmqproto\tnumFLP\tnumEPN" << endl;
-    return 1;
-  }
-  
-  int numFLP = atoi(argv[1]);
-  int numEPN = atoi(argv[2]);
-  
-  if ( numFLP <= 0 || numEPN <= 0 ) {
-    cout << "Error: At least 1 FLP and EPN needed\n" << endl;
-    return -1;
-  }
-  
   //Initialize zmq
   zmq::context_t context (1);
-    
-  //Start publisher on a new thread
-  for ( int i = 0; i < numFLP; i++ ) {
-    pthread_t publisherThread;
-    pthread_create (&publisherThread, NULL, zmqprotoPublisher::Run, &context);
-  }
-  
-  //Start subscriber on a new thread
-  for ( int i = 0; i < numEPN; i++ ) {
-    pthread_t subscriberThread;
-    pthread_create (&subscriberThread, NULL, zmqprotoSubscriber::Run, &context);
-  }
   
   //Initialize the IP vector
   vector<string>ipVector;
@@ -54,6 +27,8 @@ int main(int argc, char** argv)
 
   zmq::socket_t backend (context, ZMQ_PULL);
   backend.bind("tcp://*:5558");
+  
+  cout << "Directory: Waiting for incoming connections..." << endl;
   
   while (1) {
     //Listen for incoming connections
@@ -79,7 +54,7 @@ int main(int argc, char** argv)
     zmq::message_t pubMsg(sbuf.size());
     memcpy(pubMsg.data(), sbuf.data(), sbuf.size());
         
-    //Publish the serialized vector to all connected FLPs
+    //Push the serialized vector to all connected FLPs
     frontend.send(pubMsg);
   }
   

@@ -9,16 +9,17 @@
 
 using namespace std;
 
-void *zmqprotoPublisher::Run(void *arg)
+int main(int argc, char** argv)
 {
-  zmq::context_t *context = (zmq::context_t *) arg;
+  //Initialize zmq
+  zmq::context_t context (1);
   
   //Initialize socket to pull from the directory
-  zmq::socket_t pullFromDirectory(*context, ZMQ_PULL);
+  zmq::socket_t pullFromDirectory(context, ZMQ_PULL);
   pullFromDirectory.connect("tcp://127.0.0.1:5556");
   
   //Initialize socket to push to the EPN
-  zmq::socket_t pushToEPN(*context, ZMQ_PUSH);
+  zmq::socket_t pushToEPN(context, ZMQ_PUSH);
   
   //Initialize dummy data
   int fEventSize = 10000;
@@ -61,6 +62,7 @@ void *zmqprotoPublisher::Run(void *arg)
       cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
     }
 
-    sleep(10);
+    sleep(1);
   }
+  return 0;
 }
