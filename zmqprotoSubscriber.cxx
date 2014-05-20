@@ -8,6 +8,55 @@
 
 using namespace std;
 
+char directoryIPAddr[30];
+
+void *pushToDirectory (void *arg)
+{
+  zmq::context_t *context = (zmq::context_t *) arg;
+  
+  pthread_t self_id = pthread_self();
+  
+  char *localIP = zmqprotoCommon::determine_ip();
+  
+  //Initialize socket
+  zmq::socket_t directorySocket(*context, ZMQ_PUSH);
+  directorySocket.connect(directoryIPAddr);
+  
+  //Send a ping per time slice to the directory
+  while (1) {
+    zmq::message_t msgToDirectory(20);
+    memcpy(msgToDirectory.data(), localIP, 20);
+    directorySocket.send (msgToDirectory);
+    
+    cout << "EPN: Sent a ping to the directory" << endl;
+    
+    sleep(10);
+  }
+}
+
+void *pullFromFLP (void *arg)
+{
+  zmq::context_t *context = (zmq::context_t *) arg;
+  
+  pthread_t self_id = pthread_self();
+  
+  //Initialize socket
+  zmq::socket_t FLPSocket(*context, ZMQ_PULL);
+  FLPSocket.bind("tcp://*:5560");
+  
+  //Receive payload from the FLPs
+  while (1) {
+    zmq::message_t msgFromFLP;
+    FLPSocket.recv (&msgFromFLP);
+    
+    cout << "EPN: Received payload from FLP" << endl;
+    cout << "EPN: Message size: " << msgFromFLP.size() << " bytes." << endl;
+    
+    Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
+    cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl;
+  }
+}
+
 int main(int argc, char** argv)
 {
   if ( argc != 2 ) {
@@ -15,40 +64,18 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  char directoryIPAddr[30];
-  
   snprintf(directoryIPAddr, 30, "tcp://%s:5558", argv[1]);
   
   zmq::context_t context (1);
   
-  char *localIP = zmqprotoCommon::determine_ip();
+  //Launch the threads that handle the sockets
+  pthread_t directoryThread;
+  pthread_create (&directoryThread, NULL, pushToDirectory, &context);
   
-  //Initialize subscriber socket
-  zmq::socket_t pushToDirectory(context, ZMQ_PUSH);
-  pushToDirectory.connect(directoryIPAddr);
+  pthread_t FLPThread;
+  pthread_create (&FLPThread, NULL, pullFromFLP, &context);
   
-  //Initialize socket to receive from FLP
-  zmq::socket_t pullFromFLP(context, ZMQ_PULL);
-  pullFromFLP.bind("tcp://*:5560");
-  
-  while (1) {
-    //Send a ping to the directory, 1 per second
-    zmq::message_t msgToDirectory(20);
-    memcpy(msgToDirectory.data(), localIP, 20);
-    pushToDirectory.send (msgToDirectory);
-    
-    cout << "EPN: Sent a ping to the directory" << endl;
-    
-    //Receive payload from the FLPs
-    zmq::message_t msgFromFLP;
-    pullFromFLP.recv (&msgFromFLP);
-    
-    cout << "EPN: Received payload from FLP" << endl;
-    cout << "EPN: Message size: " << msgFromFLP.size() << " bytes." << endl;
-    
-    Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
-    cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl;
-    
-    sleep(1);
-  }
+  //Wait for the threads to exit
+  (void) pthread_join(directoryThread, NULL);
+  (void) pthread_join(FLPThread, NULL);
 }
