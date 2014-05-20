@@ -8,12 +8,6 @@ using namespace std;
 
 class zmqproto: public zmqprotoCommon
 {
-  public:
-    
-  private:
-  
-    void publisher();
-    void subscriber();
 };
 
 #endif

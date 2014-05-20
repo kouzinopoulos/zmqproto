@@ -21,7 +21,6 @@ int main(int argc, char** argv)
   
   zmq::context_t context (1);
   
-  int fEventSize = 10000;
   char *localIP = zmqprotoCommon::determine_ip();
   
   //Initialize subscriber socket

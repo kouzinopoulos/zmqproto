@@ -31,7 +31,7 @@ int main(int argc, char** argv)
   zmq::socket_t pushToEPN(context, ZMQ_PUSH);
   
   //Initialize dummy data
-  int fEventSize = 10000;
+  int fEventSize = 100000;
   
   Content* payload = new Content[fEventSize];
   for (int i = 0; i < fEventSize; ++i) {
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
       
       cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
-      cout << "FLP: message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl;
+      cout << "FLP: Message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl;
     }
 
     sleep(1);
