@@ -31,7 +31,6 @@ int main(int argc, char** argv)
   cout << "Directory: Waiting for incoming connections..." << endl;
   
   while (1) {
-    //Listen for incoming connections
     zmq::message_t subMsg (20 * sizeof(char));
     backend.recv(&subMsg);
     
@@ -45,19 +44,20 @@ int main(int argc, char** argv)
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
       ipVector.push_back(reinterpret_cast<char *>(subMsg.data()));
       
-      cout << "Directory: Unknown IP, adding it to vector. Total IPs: "<< ipVector.size()<<endl;
+      cout << "Directory: Unknown IP, adding it to vector. Total IPs: " << ipVector.size() << endl;
     }
     
-    //Serialize the vector using msgpack
+    //Pack the IP vector using msgpack and send it to all connected FLPs
     msgpack::sbuffer sbuf;
     msgpack::pack(sbuf, ipVector);
+
     zmq::message_t pubMsg(sbuf.size());
     memcpy(pubMsg.data(), sbuf.data(), sbuf.size());
-        
-    //Push the serialized vector to all connected FLPs
+
     frontend.send(pubMsg);
+    
+    cout << "Directory: Sent the IP vector to all FLPs" << endl << endl;
   }
-  
   return 0;
 }
 

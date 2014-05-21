@@ -14,8 +14,6 @@ void *pushToDirectory (void *arg)
 {
   zmq::context_t *context = (zmq::context_t *) arg;
   
-  pthread_t self_id = pthread_self();
-  
   char *localIP = zmqprotoCommon::determine_ip();
   
   //Initialize socket
@@ -38,8 +36,6 @@ void *pullFromFLP (void *arg)
 {
   zmq::context_t *context = (zmq::context_t *) arg;
   
-  pthread_t self_id = pthread_self();
-  
   //Initialize socket
   zmq::socket_t FLPSocket(*context, ZMQ_PULL);
   FLPSocket.bind("tcp://*:5560");
@@ -53,7 +49,7 @@ void *pullFromFLP (void *arg)
     cout << "EPN: Message size: " << msgFromFLP.size() << " bytes." << endl;
     
     Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
-    cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl;
+    cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl << endl;
   }
 }
 
