@@ -50,9 +50,6 @@ void *pullFromFLP (void *arg)
     
     Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
     cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl << endl;
-    
-    //Simulate data processing
-    sleep(5);
   }
 }
 

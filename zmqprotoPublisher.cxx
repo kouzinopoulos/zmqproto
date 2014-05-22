@@ -75,6 +75,8 @@ int main(int argc, char** argv)
       cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
       cout << "FLP: Message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl << endl;
+      
+      sleep(1);
     }
   }
   return 0;
