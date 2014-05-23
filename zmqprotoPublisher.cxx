@@ -11,13 +11,15 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-  if ( argc != 3 ) {
-    cout << "Usage: " << argv[0] << " directoryIPAddr directoryIPPort" << endl;
+  if ( argc != 4 ) {
+    cout << "Usage: " << argv[0] << " directoryIPAddr directoryIPPort fEventSize" << endl;
     return 1;
   }
   
   char directoryIPAddr[30];
   snprintf(directoryIPAddr, 30, "tcp://%s:%s", argv[1], argv[2]);
+  
+  int fEventSize = atoi(argv[3]);
       
   //Initialize zmq
   zmq::context_t context (1);
@@ -28,9 +30,6 @@ int main(int argc, char** argv)
   
   //Initialize socket to push to EPNs
   zmq::socket_t pushToEPN(context, ZMQ_PUSH);
-  
-  //Initialize dummy data
-  int fEventSize = 100000;
   
   Content* payload = new Content[fEventSize];
   for (int i = 0; i < fEventSize; ++i) {
