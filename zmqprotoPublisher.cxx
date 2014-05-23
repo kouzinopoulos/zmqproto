@@ -20,7 +20,7 @@ int main(int argc, char** argv)
   snprintf(directoryIPAddr, 30, "tcp://%s:%s", argv[1], argv[2]);
   
   int fEventSize = atoi(argv[3]);
-      
+  
   //Initialize zmq
   zmq::context_t context (1);
   
@@ -33,12 +33,12 @@ int main(int argc, char** argv)
   
   Content* payload = new Content[fEventSize];
   for (int i = 0; i < fEventSize; ++i) {
-        (&payload[i])->id = 0;
-        (&payload[i])->x = rand() % 100 + 1;
-        (&payload[i])->y = rand() % 100 + 1;
-        (&payload[i])->z = rand() % 100 + 1;
-        (&payload[i])->a = (rand() % 100 + 1) / (rand() % 100 + 1);
-        (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
+    (&payload[i])->id = 0;
+    (&payload[i])->x = rand() % 100 + 1;
+    (&payload[i])->y = rand() % 100 + 1;
+    (&payload[i])->z = rand() % 100 + 1;
+    (&payload[i])->a = (rand() % 100 + 1) / (rand() % 100 + 1);
+    (&payload[i])->b = (rand() % 100 + 1) / (rand() % 100 + 1);
   }
 
   std::vector<string> data;
@@ -70,9 +70,12 @@ int main(int argc, char** argv)
       memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
       pushToEPN.send (msgToEPN);
       
-      cout << "FLP: Sent a message to EPN at " << data.at(i).c_str() << endl;
+      cout << "FLP: Sent message " << (&payload[i])->id << " to EPN at " << data.at(i).c_str() << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
       cout << "FLP: Message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl << endl;
+      
+      //Increase the event ID
+      (&payload[i])->id++;
       
       sleep(1);
     }

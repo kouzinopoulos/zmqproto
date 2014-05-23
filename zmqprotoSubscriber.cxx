@@ -43,10 +43,10 @@ void *pullFromFLP (void *arg)
     zmq::message_t msgFromFLP;
     FLPSocket.recv (&msgFromFLP);
     
-    cout << "EPN: Received payload from FLP" << endl;
-    cout << "EPN: Message size: " << msgFromFLP.size() << " bytes." << endl;
-    
     Content* input = reinterpret_cast<Content*>(msgFromFLP.data());
+    
+    cout << "EPN: Received payload " << (&input[0])->id << " from FLP" << endl;
+    cout << "EPN: Message size: " << msgFromFLP.size() << " bytes" << endl;
     cout << "EPN: message content: " << (&input[0])->x << " " << (&input[0])->y << " " << (&input[0])->z << " " << (&input[0])->a << " " << (&input[0])->b << endl << endl;
   }
 }
