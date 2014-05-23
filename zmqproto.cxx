@@ -14,6 +14,20 @@
 
 int main(int argc, char** argv)
 {
+  if ( argc != 3 ) {
+    cout << "Usage: " << argv[0] << " frontendIPPort backendIPPort" << endl;
+    return 1;
+  }
+  
+  if ( atoi(argv[1]) > 65535 || atoi(argv[2]) > 65535 || atoi(argv[1]) < 1 || atoi(argv[2]) < 1 ) {
+    cout << "Usage: " << argv[0] << " frontendIPPort backendIPPort" << endl;
+    return 1;
+  }
+  
+  char frontendIPAddr[30], backendIPAddr[30];
+  snprintf(frontendIPAddr, 30, "tcp://*:%s", argv[1]);
+  snprintf(backendIPAddr, 30, "tcp://*:%s", argv[2]);
+  
   //Initialize zmq
   zmq::context_t context (1);
   
@@ -23,15 +37,15 @@ int main(int argc, char** argv)
   
   //Setup the directory sockets
   zmq::socket_t frontend (context, ZMQ_PUSH);
-  frontend.bind("tcp://*:5556");
+  frontend.bind(frontendIPAddr);
 
   zmq::socket_t backend (context, ZMQ_PULL);
-  backend.bind("tcp://*:5558");
+  backend.bind(backendIPAddr);
   
   cout << "Directory: Waiting for incoming connections..." << endl;
   
   while (1) {
-    zmq::message_t subMsg (20 * sizeof(char));
+    zmq::message_t subMsg;
     backend.recv(&subMsg);
     
     //cout << reinterpret_cast<char *>(subMsg.data()) <<endl;

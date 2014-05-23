@@ -6,7 +6,7 @@ using namespace std;
 
 #include "zmqprotoCommon.h"
 
-class zmqproto: public zmqprotoCommon
+class zmqproto
 {
 };
 

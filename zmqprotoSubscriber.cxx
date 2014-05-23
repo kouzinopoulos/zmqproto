@@ -8,22 +8,20 @@
 
 using namespace std;
 
-char directoryIPAddr[30];
+char localIPAddr[30], directoryIPAddr[30];
 
 void *pushToDirectory (void *arg)
 {
   zmq::context_t *context = (zmq::context_t *) arg;
   
-  char *localIP = zmqprotoCommon::determine_ip();
-  
   //Initialize socket
   zmq::socket_t directorySocket(*context, ZMQ_PUSH);
   directorySocket.connect(directoryIPAddr);
   
-  //Send a ping per time slice to the directory
+  //On each time slice, send the whole "tcp://IP:port" identifier to the directory
   while (1) {
-    zmq::message_t msgToDirectory(20);
-    memcpy(msgToDirectory.data(), localIP, 20);
+    zmq::message_t msgToDirectory(30);
+    memcpy(msgToDirectory.data(), localIPAddr, 30);
     directorySocket.send (msgToDirectory);
     
     cout << "EPN: Sent a ping to the directory" << endl;
@@ -38,7 +36,7 @@ void *pullFromFLP (void *arg)
   
   //Initialize socket
   zmq::socket_t FLPSocket(*context, ZMQ_PULL);
-  FLPSocket.bind("tcp://*:5560");
+  FLPSocket.bind(localIPAddr);
   
   //Receive payload from the FLPs
   while (1) {
@@ -55,12 +53,13 @@ void *pullFromFLP (void *arg)
 
 int main(int argc, char** argv)
 {
-  if ( argc != 2 ) {
-    cout << "Usage: "<<argv[0]<<" directoryIPAddr" << endl;
+  if ( argc != 5 ) {
+    cout << "Usage: " << argv[0] << " localIPAddr localIPPort directoryIPAddr directoryIPPort" << endl;
     return 1;
   }
   
-  snprintf(directoryIPAddr, 30, "tcp://%s:5558", argv[1]);
+  snprintf(localIPAddr, 30, "tcp://%s:%s", argv[1], argv[2]);
+  snprintf(directoryIPAddr, 30, "tcp://%s:%s", argv[3], argv[4]);
   
   zmq::context_t context (1);
   

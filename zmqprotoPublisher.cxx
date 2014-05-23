@@ -11,15 +11,14 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-  if ( argc != 2 ) {
-    cout << "Usage: "<<argv[0]<<" directoryIPAddr" << endl;
+  if ( argc != 3 ) {
+    cout << "Usage: " << argv[0] << " directoryIPAddr directoryIPPort" << endl;
     return 1;
   }
   
-  char EPNIPAddr[30], directoryIPAddr[30];
-  
-  snprintf(directoryIPAddr, 30, "tcp://%s:5556", argv[1]);
-    
+  char directoryIPAddr[30];
+  snprintf(directoryIPAddr, 30, "tcp://%s:%s", argv[1], argv[2]);
+      
   //Initialize zmq
   zmq::context_t context (1);
   
@@ -64,9 +63,9 @@ int main(int argc, char** argv)
     }
         
     //Connect to each received IP, send payload
+    //FIXME: connect only once to the EPNs, not on every data transfer?
     for (int i = 0; i < data.size(); i++) {
-      snprintf(EPNIPAddr, 30, "tcp://%s:5560", data.at(i).c_str());
-      pushToEPN.connect(EPNIPAddr);
+      pushToEPN.connect(data.at(i).c_str());
       
       zmq::message_t msgToEPN (fEventSize * sizeof(Content));
       memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
