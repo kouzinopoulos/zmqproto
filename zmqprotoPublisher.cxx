@@ -70,12 +70,14 @@ int main(int argc, char** argv)
       memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
       pushToEPN.send (msgToEPN);
       
-      cout << "FLP: Sent message " << (&payload[i])->id << " to EPN at " << data.at(i).c_str() << endl;
+      cout << "FLP: Sent message " << (&payload[0])->id << " to EPN at " << data.at(i).c_str() << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
-      cout << "FLP: Message content: " <<  (&payload[i])->id << " " << (&payload[i])->x << " " << (&payload[i])->y << " " << (&payload[i])->z << " " << (&payload[i])->a << " " << (&payload[i])->b << endl << endl;
+      cout << "FLP: Message content: " <<  (&payload[0])->id << " " << (&payload[0])->x << " " 
+            << (&payload[0])->y << " " << (&payload[0])->z << " " << (&payload[0])->a << " " 
+            << (&payload[0])->b << endl << endl;
       
       //Increase the event ID
-      (&payload[i])->id++;
+      (&payload[0])->id++;
       
       sleep(1);
     }
