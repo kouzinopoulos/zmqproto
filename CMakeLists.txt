@@ -25,9 +25,9 @@ SET(MSGPACKPATH $ENV{MSGPACKPATH})
 include_directories(${ZMQPATH}/include ${MSGPACKPATH}/include)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
@@ -39,9 +39,9 @@ add_executable(zmqprotoflp ${FLPSOURCES})
 add_executable(zmqprotoepn ${EPNSOURCES})
 
 #Link the executables
-target_link_libraries (zmqprotodirectory zmq msgpack)
-target_link_libraries (zmqprotoflp zmq msgpack pthread)
-target_link_libraries (zmqprotoepn zmq pthread)
+target_link_libraries (zmqprotodirectory zmq msgpack boost_system boost_thread)
+target_link_libraries (zmqprotoflp zmq msgpack boost_system boost_thread)
+target_link_libraries (zmqprotoepn zmq boost_system boost_thread)
 
 #Install the executables
 install(TARGETS zmqprotodirectory DESTINATION bin)

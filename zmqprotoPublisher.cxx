@@ -4,10 +4,38 @@
 #include <iostream>
 #include <unistd.h>
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+
 #include "zmqprotoCommon.h"
+#include "zmqprotoContext.h"
+#include "zmqprotoSocket.h"
 #include "zmqprotoPublisher.h"
 
 using namespace std;
+
+void Log (zmqprotoSocket *pullFromDirectoryPtr, zmqprotoSocket *pushToEPNPtr)
+{
+  unsigned long bytesTx = 0;
+  unsigned long messagesTx = 0;
+  unsigned long bytesRx = 0;
+  unsigned long messagesRx = 0;
+  
+  while (1) {
+    cout << "Tx " << "\033[01;34m" << pushToEPNPtr->GetBytesTx() - bytesTx << " b/s "
+         << pushToEPNPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m Rx " << "\033[01;31m"
+         << pullFromDirectoryPtr->GetBytesRx() - bytesRx << " b/s "
+         << pullFromDirectoryPtr->GetMessagesRx() - messagesRx << " msg/s" << "\033[0m" << endl;
+         
+    bytesTx = pushToEPNPtr->GetBytesTx();
+    messagesTx = pushToEPNPtr->GetMessagesTx();
+    bytesRx = pullFromDirectoryPtr->GetBytesRx();
+    messagesRx = pullFromDirectoryPtr->GetMessagesRx();
+    
+    boost::this_thread::sleep(boost::posix_time::seconds(1));
+  }
+}
 
 int main(int argc, char** argv)
 {
@@ -22,14 +50,15 @@ int main(int argc, char** argv)
   int fEventSize = atoi(argv[3]);
   
   //Initialize zmq
-  zmq::context_t context (1);
+  int numIoThreads = 1;
+  zmqprotoContext fContext (numIoThreads);
   
   //Initialize socket to pull from the directory
-  zmq::socket_t pullFromDirectory(context, ZMQ_PULL);
-  pullFromDirectory.connect(directoryIPAddr);
+  zmqprotoSocket pullFromDirectory(fContext.GetContext(), "pull", 0);
+  pullFromDirectory.Connect(directoryIPAddr);
   
   //Initialize socket to push to EPNs
-  zmq::socket_t pushToEPN(context, ZMQ_PUSH);
+  zmqprotoSocket pushToEPN(fContext.GetContext(), "push", 1);
   
   Content* payload = new Content[fEventSize];
   for (int i = 0; i < fEventSize; ++i) {
@@ -43,44 +72,52 @@ int main(int argc, char** argv)
 
   std::vector<string> data;
   
+  boost::thread logThread(Log, &pullFromDirectory, &pushToEPN);
+  
   while (1) {
     //Receive the IP vector from the Directory
-    zmq::message_t msgFromDirectory;
-    int retVal = pullFromDirectory.recv(&msgFromDirectory, ZMQ_NOBLOCK);
+    zmq_msg_t msgFromDirectory;
+    zmq_msg_init (&msgFromDirectory);
+    int retVal = pullFromDirectory.Receive(&msgFromDirectory, "no-block");
     
     //If a message was received, unpack it
     if (retVal) {
     
       // Deserialize received message
       msgpack::unpacked unpacked;
-      msgpack::unpack(&unpacked, reinterpret_cast<char*>(msgFromDirectory.data()), msgFromDirectory.size());
+      msgpack::unpack(&unpacked, reinterpret_cast<char *>(zmq_msg_data (&msgFromDirectory)), zmq_msg_size(&msgFromDirectory));
       
       msgpack::object obj = unpacked.get();
       obj.convert(&data);
     
-      cout << "FLP: Received a vector with " << data.size() << " IPs from the directory node" << endl;
+      //cout << "FLP: Received a vector with " << data.size() << " IPs from the directory node" << endl;
     }
         
     //Connect to each received IP, send payload
     //FIXME: connect only once to the EPNs, not on every data transfer?
     for (int i = 0; i < data.size(); i++) {
-      pushToEPN.connect(data.at(i).c_str());
+      pushToEPN.Connect(data.at(i).c_str());
       
-      zmq::message_t msgToEPN (fEventSize * sizeof(Content));
-      memcpy(msgToEPN.data(), payload, fEventSize * sizeof(Content));
-      pushToEPN.send (msgToEPN);
+      zmq_msg_t msgToEPN;
+      zmq_msg_init_size (&msgToEPN, fEventSize * sizeof(Content));
       
+      memcpy (zmq_msg_data(&msgToEPN), payload, fEventSize * sizeof(Content));
+      pushToEPN.Send(&msgToEPN, "");
+      /*
       cout << "FLP: Sent message " << (&payload[0])->id << " to EPN at " << data.at(i).c_str() << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
       cout << "FLP: Message content: " <<  (&payload[0])->id << " " << (&payload[0])->x << " " 
             << (&payload[0])->y << " " << (&payload[0])->z << " " << (&payload[0])->a << " " 
             << (&payload[0])->b << endl << endl;
-      
+      */
       //Increase the event ID
       (&payload[0])->id++;
       
       sleep(1);
     }
   }
+  
+  logThread.join();
+  
   return 0;
 }

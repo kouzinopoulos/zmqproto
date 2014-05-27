@@ -9,7 +9,7 @@
 class zmqprotoSocket
 {
   public:
-    zmqprotoSocket(const std::string& type, int num);
+    zmqprotoSocket(void* fContext, const std::string& type, int num);
     
     virtual unsigned long GetBytesTx();
     virtual unsigned long GetBytesRx();
@@ -26,7 +26,6 @@ class zmqprotoSocket
     virtual void Close();
      
   private:
-    void* fContext;
     void* fSocket;
     std::string fId;
     unsigned long fBytesTx;

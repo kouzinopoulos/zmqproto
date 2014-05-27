@@ -1,21 +1,17 @@
 #include <iostream>
 #include <sstream>
 
+#include "zmqprotoContext.h"
 #include "zmqprotoSocket.h"
 
 using namespace std;
 
-zmqprotoSocket::zmqprotoSocket (const string& type, int num) :
+zmqprotoSocket::zmqprotoSocket (void* fContext, const string& type, int num) :
   fBytesTx(0),
   fBytesRx(0),
   fMessagesTx(0),
   fMessagesRx(0)
 {
-  fContext = zmq_ctx_new ();
-  if (fContext == NULL){
-    cout << "failed creating context, reason: " << zmq_strerror(errno) << endl;
-  }
-  
   stringstream id;
   id << type << "." << num;
   fId = id.str();
@@ -140,5 +136,6 @@ int zmqprotoSocket::GetConstant(const string& constant)
   if (constant == "rcv-hwm") return ZMQ_RCVHWM;
   if (constant == "snd-more") return ZMQ_SNDMORE;
   if (constant == "rcv-more") return ZMQ_RCVMORE;
+  if (constant == "no-block") return ZMQ_NOBLOCK;
   return -1;
 }
