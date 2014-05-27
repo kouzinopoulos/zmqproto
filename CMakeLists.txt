@@ -25,9 +25,9 @@ SET(MSGPACKPATH $ENV{MSGPACKPATH})
 include_directories(${ZMQPATH}/include ${MSGPACKPATH}/include)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)
