@@ -91,20 +91,22 @@ int main(int argc, char** argv)
       obj.convert(&data);
     
       //cout << "FLP: Received a vector with " << data.size() << " IPs from the directory node" << endl;
-    }
-        
-    //Connect to each received IP, send payload
-    //FIXME: connect only once to the EPNs, not on every data transfer?
-    for (int i = 0; i < data.size(); i++) {
-      pushToEPN.Connect(data.at(i).c_str());
       
+      //Connect to all nodes in the vector
+      for (int i = 0; i < data.size(); i++) {
+        pushToEPN.Connect(data.at(i).c_str());
+      }
+    }
+      
+    //If there are connected EPNs, push data to them
+    if ( data.size() > 0 ) {
       zmq_msg_t msgToEPN;
       zmq_msg_init_size (&msgToEPN, fEventSize * sizeof(Content));
       
       memcpy (zmq_msg_data(&msgToEPN), payload, fEventSize * sizeof(Content));
       pushToEPN.Send(&msgToEPN, "");
       /*
-      cout << "FLP: Sent message " << (&payload[0])->id << " to EPN at " << data.at(i).c_str() << endl;
+      cout << "FLP: Sent message " << (&payload[0])->id << " to EPN" << endl;
       cout << "FLP: Message size: " << fEventSize * sizeof(Content) << " bytes." << endl;
       cout << "FLP: Message content: " <<  (&payload[0])->id << " " << (&payload[0])->x << " " 
             << (&payload[0])->y << " " << (&payload[0])->z << " " << (&payload[0])->a << " " 
