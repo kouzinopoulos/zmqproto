@@ -96,6 +96,8 @@ int main(int argc, char** argv)
         pushToEPN.Connect(data.at(i).c_str());
       }
     }
+    
+    zmq_msg_close (&msgFromDirectory);
       
     //If there are connected EPNs, push data to them
     if ( data.size() > 0 ) {
@@ -113,6 +115,8 @@ int main(int argc, char** argv)
       */
       //Increase the event ID
       (&payload[0])->id++;
+      
+      zmq_msg_close (&msgToEPN);
       
       boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     }

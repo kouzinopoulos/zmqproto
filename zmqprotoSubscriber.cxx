@@ -45,11 +45,13 @@ void pushToDirectory (zmqprotoSocket *fSocketPtr)
 
   //On each time slice, send the whole "tcp://IP:port" identifier to the directory
   while (1) {
-    zmq_msg_t msgToDirectory;
-    zmq_msg_init_size (&msgToDirectory, 30);
-    memcpy(zmq_msg_data (&msgToDirectory), localIPAddr, 30);
+    zmq_msg_t msg;
+    zmq_msg_init_size (&msg, 30);
+    memcpy(zmq_msg_data (&msg), localIPAddr, 30);
     
-    fSocketPtr->Send (&msgToDirectory, "");
+    fSocketPtr->Send (&msg, "");
+    
+    zmq_msg_close (&msg);
     
     //cout << "EPN: Sent a ping to the directory" << endl;
     
@@ -64,11 +66,13 @@ void pullFromFLP (zmqprotoSocket *fSocketPtr)
   
   //Receive payload from the FLPs
   while (1) {
-    zmq_msg_t msgFromFLP;
-    zmq_msg_init (&msgFromFLP);
-    fSocketPtr->Receive (&msgFromFLP, "");
+    zmq_msg_t msg;
+    zmq_msg_init (&msg);
+    fSocketPtr->Receive (&msg, "");
     
-    Content* input = reinterpret_cast<Content*>(zmq_msg_data (&msgFromFLP));
+    Content* input = reinterpret_cast<Content*>(zmq_msg_data (&msg));
+    
+    zmq_msg_close (&msg);
 /*    
     cout << "EPN: Received payload " << (&input[0])->id << " from FLP" << endl;
     cout << "EPN: Message size: " << zmq_msg_size (&msgFromFLP) << " bytes" << endl;

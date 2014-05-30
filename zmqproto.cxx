@@ -53,13 +53,13 @@ void sendToFLP (zmqprotoSocket *fSocketPtr)
       msgpack::sbuffer sbuf;
       msgpack::pack(sbuf, ipVector);
 
-      //zmq::message_t pubMsg(sbuf.size());
-      zmq_msg_t pubMsg;
-      zmq_msg_init_size (&pubMsg, sbuf.size());
-      memcpy(zmq_msg_data (&pubMsg), sbuf.data(), sbuf.size());
+      zmq_msg_t msg;
+      zmq_msg_init_size (&msg, sbuf.size());
+      memcpy(zmq_msg_data (&msg), sbuf.data(), sbuf.size());
 
-      fSocketPtr->Send(&pubMsg, "");
+      fSocketPtr->Send(&msg, "");
       
+      zmq_msg_close (&msg);
       //cout << "Directory: Sent the IP vector to all FLPs" << endl << endl;
     }
     boost::this_thread::sleep(boost::posix_time::seconds(10));
@@ -69,19 +69,20 @@ void sendToFLP (zmqprotoSocket *fSocketPtr)
 void receiveFromEPN (zmqprotoSocket *fSocketPtr)
 {
   while (1) {
-    zmq_msg_t subMsg;
-    zmq_msg_init (&subMsg);
-    fSocketPtr->Receive(&subMsg, "");
+    zmq_msg_t msg;
+    zmq_msg_init (&msg);
+    fSocketPtr->Receive(&msg, "");
     
     //If the IP is unknown, add it to the IP vector
-    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
+    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&msg)));
     
     if ( ipVectorIter == ipVector.end() ) {
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
-      ipVector.push_back(reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
+      ipVector.push_back(reinterpret_cast<char *>(zmq_msg_data (&msg)));
       
       //cout << "Directory: Unknown IP, adding it to vector. Total IPs: " << ipVector.size() << endl;
     }
+    zmq_msg_close (&msg);
   }
 }
 
