@@ -2,7 +2,6 @@
 #include <msgpack.hpp>
 
 #include <iostream>
-#include <unistd.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
@@ -115,7 +114,7 @@ int main(int argc, char** argv)
       //Increase the event ID
       (&payload[0])->id++;
       
-      sleep(1);
+      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     }
   }
   
