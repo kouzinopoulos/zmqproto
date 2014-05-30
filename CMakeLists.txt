@@ -4,8 +4,8 @@ project(zmqproto)
 
 #Set the version of the software
 set (VERSION_MAJOR 0)
-set (VERSION_MINOR 0)
-set (VERSION_PATCH 2)
+set (VERSION_MINOR 1)
+set (VERSION_PATCH 0)
 
 #ZeroMQ is part of the external packages of FairRoot.
 IF(NOT DEFINED ENV{ZMQPATH})
