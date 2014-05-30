@@ -57,7 +57,7 @@ void pushToDirectory (zmqprotoSocket *fSocketPtr)
   }
 }
 
-void *pullFromFLP (zmqprotoSocket *fSocketPtr)
+void pullFromFLP (zmqprotoSocket *fSocketPtr)
 {
   //Bind locally
   fSocketPtr->Bind(localIPAddr);

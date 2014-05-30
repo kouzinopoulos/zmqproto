@@ -20,6 +20,9 @@
 
 using namespace std;
 
+vector<string>ipVector;
+vector<string>::iterator ipVectorIter;
+
 void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
 {
   unsigned long bytesTx = 0;
@@ -42,6 +45,46 @@ void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
   }
 }
 
+void sendToFLP (zmqprotoSocket *fSocketPtr)
+{
+  while (1) {
+    if ( ipVector.size() > 0 ) {
+      //Pack the IP vector using msgpack and send it to all connected FLPs
+      msgpack::sbuffer sbuf;
+      msgpack::pack(sbuf, ipVector);
+
+      //zmq::message_t pubMsg(sbuf.size());
+      zmq_msg_t pubMsg;
+      zmq_msg_init_size (&pubMsg, sbuf.size());
+      memcpy(zmq_msg_data (&pubMsg), sbuf.data(), sbuf.size());
+
+      fSocketPtr->Send(&pubMsg, "");
+      
+      //cout << "Directory: Sent the IP vector to all FLPs" << endl << endl;
+    }
+    boost::this_thread::sleep(boost::posix_time::seconds(10));
+  }
+}
+
+void receiveFromEPN (zmqprotoSocket *fSocketPtr)
+{
+  while (1) {
+    zmq_msg_t subMsg;
+    zmq_msg_init (&subMsg);
+    fSocketPtr->Receive(&subMsg, "");
+    
+    //If the IP is unknown, add it to the IP vector
+    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
+    
+    if ( ipVectorIter == ipVector.end() ) {
+      //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
+      ipVector.push_back(reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
+      
+      //cout << "Directory: Unknown IP, adding it to vector. Total IPs: " << ipVector.size() << endl;
+    }
+  }
+}
+
 int main(int argc, char** argv)
 {
   if ( argc != 3 ) {
@@ -58,10 +101,6 @@ int main(int argc, char** argv)
   snprintf(frontendIPAddr, 30, "tcp://*:%s", argv[1]);
   snprintf(backendIPAddr, 30, "tcp://*:%s", argv[2]);
   
-  //Initialize the IP vector
-  vector<string>ipVector;
-  vector<string>::iterator ipVectorIter;
-  
   int numIoThreads = 1;
   zmqprotoContext fContext (numIoThreads);
   
@@ -71,41 +110,15 @@ int main(int argc, char** argv)
 
   zmqprotoSocket backend(fContext.GetContext(), "pull", 1);
   backend.Bind(backendIPAddr);
+  
+  //Launch the threads that handle the sockets
+  boost::thread FLPThread(sendToFLP, &frontend);
+  boost::thread EPNThread(receiveFromEPN, &backend);
 
   boost::thread logThread(Log, &frontend, &backend);
-  
-  //cout << "Directory: Waiting for incoming connections..." << endl;
-  
-  while (1) {
-    zmq_msg_t subMsg;
-    zmq_msg_init (&subMsg);
-    backend.Receive(&subMsg, "");
-    
-    //cout << "Directory: Received a ping from EPN" << endl;
-    
-    //If the IP is unknown, add it to the IP vector
-    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
-    
-    if ( ipVectorIter == ipVector.end() ) {
-      //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
-      ipVector.push_back(reinterpret_cast<char *>(zmq_msg_data (&subMsg)));
-      
-      //cout << "Directory: Unknown IP, adding it to vector. Total IPs: " << ipVector.size() << endl;
-    }
 
-    //Pack the IP vector using msgpack and send it to all connected FLPs
-    msgpack::sbuffer sbuf;
-    msgpack::pack(sbuf, ipVector);
-
-    //zmq::message_t pubMsg(sbuf.size());
-    zmq_msg_t pubMsg;
-    zmq_msg_init_size (&pubMsg, sbuf.size());
-    memcpy(zmq_msg_data (&pubMsg), sbuf.data(), sbuf.size());
-
-    frontend.Send(&pubMsg, "");
-    
-    //cout << "Directory: Sent the IP vector to all FLPs" << endl << endl;
-  }
+  FLPThread.join();
+  EPNThread.join();
   
   logThread.join();
   
