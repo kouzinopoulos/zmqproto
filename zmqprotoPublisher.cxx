@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <time.h>
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -21,11 +23,22 @@ void Log (zmqprotoSocket *pullFromDirectoryPtr, zmqprotoSocket *pushToEPNPtr)
   unsigned long bytesRx = 0;
   unsigned long messagesRx = 0;
   
+  time_t start, current;
+  time (&start);
+  
   while (1) {
-    cout << "Tx " << "\033[01;34m" << pushToEPNPtr->GetBytesTx() - bytesTx << " b/s "
-         << pushToEPNPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m Rx " << "\033[01;31m"
+    time (&current);
+    double difTime = difftime (current, start);
+    
+    cout << setprecision(2) << fixed
+         << "Tx \033[01;34m" << pushToEPNPtr->GetBytesTx() - bytesTx << " b/s "
+         << pushToEPNPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
          << pullFromDirectoryPtr->GetBytesRx() - bytesRx << " b/s "
-         << pullFromDirectoryPtr->GetMessagesRx() - messagesRx << " msg/s" << "\033[0m" << endl;
+         << pullFromDirectoryPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
+         << "Avg Tx \033[01;34m" << pushToEPNPtr->GetBytesTx()/difTime << " b/s "
+         << pushToEPNPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
+         << "\033[01;31m" << pullFromDirectoryPtr->GetBytesRx()/difTime << " b/s "
+         << pullFromDirectoryPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = pushToEPNPtr->GetBytesTx();
     messagesTx = pushToEPNPtr->GetMessagesTx();

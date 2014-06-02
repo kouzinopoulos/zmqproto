@@ -4,9 +4,10 @@
 #include <iostream>
 #include <vector>
 
+#include <time.h>
 #include <unistd.h>
 
-#include <sys/ioctl.h> //For ioctl
+#include <sys/ioctl.h>
 #include <net/if.h>
 #include <netinet/in.h>
 
@@ -30,11 +31,22 @@ void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
   unsigned long bytesRx = 0;
   unsigned long messagesRx = 0;
   
+  time_t start, current;
+  time (&start);
+  
   while (1) {
-    cout << "Tx " << "\033[01;34m" << frontendPtr->GetBytesTx() - bytesTx << " b/s "
-         << frontendPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m Rx " << "\033[01;31m"
+    time (&current);
+    double difTime = difftime (current, start);
+    
+    cout << setprecision(2) << fixed
+         << "Tx \033[01;34m" << frontendPtr->GetBytesTx() - bytesTx << " b/s "
+         << frontendPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
          << backendPtr->GetBytesRx() - bytesRx << " b/s "
-         << backendPtr->GetMessagesRx() - messagesRx << " msg/s" << "\033[0m" << endl;
+         << backendPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
+         << "Avg Tx \033[01;34m" << frontendPtr->GetBytesTx()/difTime << " b/s "
+         << frontendPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
+         << "\033[01;31m" << backendPtr->GetBytesRx()/difTime << " b/s "
+         << backendPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = frontendPtr->GetBytesTx();
     messagesTx = frontendPtr->GetMessagesTx();

@@ -105,7 +105,7 @@ size_t zmqprotoSocket::Receive(zmq_msg_t *msg, const string& flag)
 
 void zmqprotoSocket::Bind(const string& address)
 {
-  cout << "bind socket " << fId << " on " << address << endl;
+//  cout << "bind socket " << fId << " on " << address << endl;
 
   int rc = zmq_bind (fSocket, address.c_str());
   if (rc != 0) {
@@ -115,7 +115,7 @@ void zmqprotoSocket::Bind(const string& address)
 
 void zmqprotoSocket::Connect(const string& address)
 {
-  cout << "connect socket #" << fId << " on " << address << endl;
+//  cout << "connect socket #" << fId << " on " << address << endl;
 
   int rc = zmq_connect (fSocket, address.c_str());
   if (rc != 0) {

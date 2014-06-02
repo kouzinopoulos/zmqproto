@@ -1,7 +1,8 @@
 #include <zmq.hpp>
 
 #include <iostream>
-#include <unistd.h>
+
+#include <time.h>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread.hpp>
@@ -23,11 +24,22 @@ void Log (zmqprotoSocket *FLPSocketPtr, zmqprotoSocket *directorySocketPtr)
   unsigned long bytesRx = 0;
   unsigned long messagesRx = 0;
   
+  time_t start, current;
+  time (&start);
+  
   while (1) {
-    cout << "Tx " << "\033[01;34m" << directorySocketPtr->GetBytesTx() - bytesTx << " b/s "
-         << directorySocketPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m Rx " << "\033[01;31m"
+    time (&current);
+    double difTime = difftime (current, start);
+    
+    cout << setprecision(2) << fixed
+         << "Tx \033[01;34m" << directorySocketPtr->GetBytesTx() - bytesTx << " b/s "
+         << directorySocketPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
          << FLPSocketPtr->GetBytesRx() - bytesRx << " b/s "
-         << FLPSocketPtr->GetMessagesRx() - messagesRx << " msg/s" << "\033[0m" << endl;
+         << FLPSocketPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
+         << "Avg Tx \033[01;34m" << directorySocketPtr->GetBytesTx()/difTime << " b/s "
+         << directorySocketPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
+         << "\033[01;31m" << FLPSocketPtr->GetBytesRx()/difTime << " b/s "
+         << FLPSocketPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = directorySocketPtr->GetBytesTx();
     messagesTx = directorySocketPtr->GetMessagesTx();
