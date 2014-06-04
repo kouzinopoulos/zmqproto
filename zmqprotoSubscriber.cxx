@@ -31,14 +31,14 @@ void Log (zmqprotoSocket *FLPSocketPtr, zmqprotoSocket *directorySocketPtr)
     time (&current);
     double difTime = difftime (current, start);
     
-    cout << setprecision(2) << fixed
-         << "Tx \033[01;34m" << directorySocketPtr->GetBytesTx() - bytesTx << " b/s "
+    cout << setprecision(0) << fixed
+         << "Tx \033[01;34m" << (directorySocketPtr->GetBytesTx() - bytesTx)/1048576 << " Mb/s "
          << directorySocketPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
-         << FLPSocketPtr->GetBytesRx() - bytesRx << " b/s "
+         << (FLPSocketPtr->GetBytesRx() - bytesRx)/1048576 << " Mb/s "
          << FLPSocketPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
-         << "Avg Tx \033[01;34m" << directorySocketPtr->GetBytesTx()/difTime << " b/s "
-         << directorySocketPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
-         << "\033[01;31m" << FLPSocketPtr->GetBytesRx()/difTime << " b/s "
+         << "Avg Tx \033[01;34m" << directorySocketPtr->GetBytesTx()/(difTime * 1048576) << " Mb/s "
+         << directorySocketPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx "
+         << "\033[01;31m" << FLPSocketPtr->GetBytesRx()/(difTime * 1048576) << " Mb/s "
          << FLPSocketPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = directorySocketPtr->GetBytesTx();

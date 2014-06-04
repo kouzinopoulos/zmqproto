@@ -30,14 +30,14 @@ void Log (zmqprotoSocket *pullFromDirectoryPtr, zmqprotoSocket *pushToEPNPtr)
     time (&current);
     double difTime = difftime (current, start);
     
-    cout << setprecision(2) << fixed
-         << "Tx \033[01;34m" << pushToEPNPtr->GetBytesTx() - bytesTx << " b/s "
+    cout << setprecision(0) << fixed
+         << "Tx \033[01;34m" << (pushToEPNPtr->GetBytesTx() - bytesTx)/1048576 << " Mb/s "
          << pushToEPNPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
-         << pullFromDirectoryPtr->GetBytesRx() - bytesRx << " b/s "
+         << (pullFromDirectoryPtr->GetBytesRx() - bytesRx)/1048576 << " Mb/s "
          << pullFromDirectoryPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
-         << "Avg Tx \033[01;34m" << pushToEPNPtr->GetBytesTx()/difTime << " b/s "
-         << pushToEPNPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
-         << "\033[01;31m" << pullFromDirectoryPtr->GetBytesRx()/difTime << " b/s "
+         << "Avg Tx \033[01;34m" << pushToEPNPtr->GetBytesTx()/(difTime * 1048576) << " Mb/s "
+         << pushToEPNPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx "
+         << "\033[01;31m" << pullFromDirectoryPtr->GetBytesRx()/(difTime * 1048576) << " Mb/s "
          << pullFromDirectoryPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = pushToEPNPtr->GetBytesTx();
