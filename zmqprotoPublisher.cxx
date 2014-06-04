@@ -130,8 +130,6 @@ int main(int argc, char** argv)
       (&payload[0])->id++;
       
       zmq_msg_close (&msgToEPN);
-      
-      boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     }
   }
   
