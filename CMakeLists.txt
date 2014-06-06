@@ -7,7 +7,10 @@ set (VERSION_MAJOR 0)
 set (VERSION_MINOR 1)
 set (VERSION_PATCH 0)
 
-#ZeroMQ is part of the external packages of FairRoot.
+#Turn off/on debug messages
+add_definitions( -DDEBUGMSG )
+
+#ZeroMQ is part of the external packages of FairRoot
 IF(NOT DEFINED ENV{ZMQPATH})
   MESSAGE(FATAL_ERROR "Please set ZMQPATH to the directory where ZeroMQ is installed and execute cmake again.")
 ENDIF(NOT DEFINED ENV{ZMQPATH})
@@ -15,6 +18,7 @@ ENDIF(NOT DEFINED ENV{ZMQPATH})
 STRING(REGEX MATCHALL "[^:]+" PATH $ENV{PATH})
 SET(ZMQPATH $ENV{ZMQPATH})
 
+#MsgPack must be installed separately
 IF(NOT DEFINED ENV{MSGPACKPATH})
   MESSAGE(FATAL_ERROR "Please set MSGPACKPATH to the directory where MessagePack is installed and execute cmake again.")
 ENDIF(NOT DEFINED ENV{MSGPACKPATH})
@@ -25,9 +29,9 @@ SET(MSGPACKPATH $ENV{MSGPACKPATH})
 include_directories(${ZMQPATH}/include ${MSGPACKPATH}/include)
 
 #Define the list of the source files
-set(SOURCES zmqproto.cxx zmqproto.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(FLPSOURCES zmqprotoPublisher.cxx zmqprotoPublisher.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
-set(EPNSOURCES zmqprotoSubscriber.cxx zmqprotoSubscriber.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp)
+set(SOURCES zmqprotoDirectory.cxx zmqprotoDirectory.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(FLPSOURCES zmqprotoFLP.cxx zmqprotoFLP.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp ${MSGPACKPATH}/include/msgpack.hpp)
+set(EPNSOURCES zmqprotoEPN.cxx zmqprotoEPN.h zmqprotoCommon.cxx zmqprotoCommon.h zmqprotoContext.cxx zmqprotoContext.h zmqprotoSocket.cxx zmqprotoSocket.h ${ZMQPATH}/include/zmq.hpp)
 
 #Seek for additional libraries here
 link_directories(${ZMQPATH}/lib)

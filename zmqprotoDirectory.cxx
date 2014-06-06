@@ -15,11 +15,14 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 
+#include "zmqprotoCommon.h"
 #include "zmqprotoContext.h"
+#include "zmqprotoDirectory.h"
 #include "zmqprotoSocket.h"
-#include "zmqproto.h"
 
 using namespace std;
+
+char FLPIPAddr[30], EPNIPAddr[30];
 
 vector<string>ipVector;
 vector<string>::iterator ipVectorIter;
@@ -39,13 +42,14 @@ void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
     double difTime = difftime (current, start);
     
     cout << setprecision(2) << fixed
-         << "Tx \033[01;34m" << frontendPtr->GetBytesTx() - bytesTx << " b/s "
+         << "EPNs: " << ipVector.size() << " "
+         << "Tx \033[01;34m" << (frontendPtr->GetBytesTx() - bytesTx)/1048576 << " Mb/s "
          << frontendPtr->GetMessagesTx() - messagesTx << " msg/s \033[0m " << "Rx \033[01;31m"
-         << backendPtr->GetBytesRx() - bytesRx << " b/s "
+         << (backendPtr->GetBytesRx() - bytesRx)/1048576 << " Mb/s "
          << backendPtr->GetMessagesRx() - messagesRx << " msg/s \033[0m "
-         << "Avg Tx \033[01;34m" << frontendPtr->GetBytesTx()/difTime << " b/s "
+         << "Avg Tx \033[01;34m" << frontendPtr->GetBytesTx()/(difTime * 1048576) << " Mb/s "
          << frontendPtr->GetMessagesTx()/difTime << " msg/s \033[0m Rx " 
-         << "\033[01;31m" << backendPtr->GetBytesRx()/difTime << " b/s "
+         << "\033[01;31m" << backendPtr->GetBytesRx()/(difTime * 1048576) << " Mb/s "
          << backendPtr->GetMessagesRx()/difTime << " msg/s \033[0m " << '\r' << flush;
          
     bytesTx = frontendPtr->GetBytesTx();
@@ -53,46 +57,52 @@ void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
     bytesRx = backendPtr->GetBytesRx();
     messagesRx = backendPtr->GetMessagesRx();
     
-    boost::this_thread::sleep(boost::posix_time::seconds(1));
+    boost::this_thread::sleep (boost::posix_time::seconds(1));
   }
 }
 
-void sendToFLP (zmqprotoSocket *fSocketPtr)
+void publishToFLP (zmqprotoSocket *fSocketPtr)
 {
+  //Bind for connections from FLPs
+  fSocketPtr->Bind (FLPIPAddr);
+  
   while (1) {
-    if ( ipVector.size() > 0 ) {
+    if (ipVector.size() > 0) {
       //Pack the IP vector using msgpack and send it to all connected FLPs
       msgpack::sbuffer sbuf;
-      msgpack::pack(sbuf, ipVector);
+      msgpack::pack (sbuf, ipVector);
 
       zmq_msg_t msg;
       zmq_msg_init_size (&msg, sbuf.size());
-      memcpy(zmq_msg_data (&msg), sbuf.data(), sbuf.size());
+      memcpy (zmq_msg_data (&msg), sbuf.data(), sbuf.size());
 
-      fSocketPtr->Send(&msg, "");
+      fSocketPtr->Send (&msg, "");
       
       zmq_msg_close (&msg);
-      //cout << "Directory: Sent the IP vector to all FLPs" << endl << endl;
     }
-    boost::this_thread::sleep(boost::posix_time::seconds(10));
   }
 }
 
 void receiveFromEPN (zmqprotoSocket *fSocketPtr)
 {
+  //Bind for connections from EPNs
+  fSocketPtr->Bind (EPNIPAddr);
+  
   while (1) {
     zmq_msg_t msg;
     zmq_msg_init (&msg);
-    fSocketPtr->Receive(&msg, "");
+    fSocketPtr->Receive (&msg, "");
+    
+    PRINT << "Received a message with a size of " << zmq_msg_size (&msg);
     
     //If the IP is unknown, add it to the IP vector
     ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&msg)));
     
     if ( ipVectorIter == ipVector.end() ) {
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
-      ipVector.push_back(reinterpret_cast<char *>(zmq_msg_data (&msg)));
-      
-      //cout << "Directory: Unknown IP, adding it to vector. Total IPs: " << ipVector.size() << endl;
+      ipVector.push_back (reinterpret_cast<char *>(zmq_msg_data (&msg)));
+
+      PRINT << "Unknown IP, adding it to vector. Total IPs: " << ipVector.size();
     }
     zmq_msg_close (&msg);
   }
@@ -100,40 +110,42 @@ void receiveFromEPN (zmqprotoSocket *fSocketPtr)
 
 int main(int argc, char** argv)
 {
-  if ( argc != 3 ) {
-    cout << "Usage: " << argv[0] << " frontendIPPort backendIPPort" << endl;
+  if (argc != 3) {
+    cout << "Usage: " << argv[0] << " publishToFLPIPPort receiveFromFLPIPPort" << endl;
     return 1;
   }
   
-  if ( atoi(argv[1]) > 65535 || atoi(argv[2]) > 65535 || atoi(argv[1]) < 1 || atoi(argv[2]) < 1 ) {
-    cout << "Usage: " << argv[0] << " frontendIPPort backendIPPort" << endl;
+  if (atoi (argv[1]) > 65535 || atoi (argv[2]) > 65535 || atoi (argv[1]) < 1 || atoi (argv[2]) < 1) {
+    cout << "Usage: " << argv[0] << " publishToFLPIPPort receiveFromFLPIPPort" << endl;
     return 1;
   }
   
-  char frontendIPAddr[30], backendIPAddr[30];
-  snprintf(frontendIPAddr, 30, "tcp://*:%s", argv[1]);
-  snprintf(backendIPAddr, 30, "tcp://*:%s", argv[2]);
+  snprintf(FLPIPAddr, 30, "tcp://*:%s", argv[1]);
+  snprintf(EPNIPAddr, 30, "tcp://*:%s", argv[2]);
   
+  //Initialize zmq
   int numIoThreads = 1;
   zmqprotoContext fContext (numIoThreads);
   
-  //Setup the directory sockets
-  zmqprotoSocket frontend(fContext.GetContext(), "push", 0);
-  frontend.Bind(frontendIPAddr);
-
-  zmqprotoSocket backend(fContext.GetContext(), "pull", 1);
-  backend.Bind(backendIPAddr);
+  //Initialize sockets
+  zmqprotoSocket FLPSocket (fContext.GetContext(), "pub", 0);
+  zmqprotoSocket EPNSocket (fContext.GetContext(), "pull", 1);
   
   //Launch the threads that handle the sockets
-  boost::thread FLPThread(sendToFLP, &frontend);
-  boost::thread EPNThread(receiveFromEPN, &backend);
+  boost::thread FLPThread (publishToFLP, &FLPSocket);
+  boost::thread EPNThread (receiveFromEPN, &EPNSocket);
+  
+#ifndef DEBUGMSG
+  boost::thread logThread (Log, &FLPSocket, &EPNSocket);
+#endif
 
-  boost::thread logThread(Log, &frontend, &backend);
-
+  //Wait for the threads to finish execution
   FLPThread.join();
   EPNThread.join();
   
+#ifndef DEBUGMSG
   logThread.join();
+#endif  
   
   return 0;
 }
