@@ -57,13 +57,10 @@ void pushToDirectory (zmqprotoSocket *fSocketPtr)
 
   //On each time slice, send the whole "tcp://IP:port" identifier to the directory
   while (1) {
-    zmq_msg_t msg;
-    zmq_msg_init_size (&msg, 30);
-    memcpy(zmq_msg_data (&msg), localIPAddr, 30);
+    zmqprotoMessage msg (30);
+    memcpy (msg.GetData(), localIPAddr, 30);
     
     fSocketPtr->Send (&msg, "");
-    
-    zmq_msg_close (&msg);
     
     PRINT << "Sent a ping to the directory";
     
@@ -78,16 +75,13 @@ void pullFromFLP (zmqprotoSocket *fSocketPtr)
   
   //Receive payload from the FLPs
   while (1) {
-    zmq_msg_t msg;
-    zmq_msg_init (&msg);
+    zmqprotoMessage msg;
     fSocketPtr->Receive (&msg, "");
     
-    Content* input = reinterpret_cast<Content*>(zmq_msg_data (&msg));
+    Content* input = reinterpret_cast<Content*>(msg.GetData());
     
     PRINT << "Received payload " << (&input[0])->id << " from FLP. Message size: "
-          << zmq_msg_size (&msg) << " bytes.";
-    
-    zmq_msg_close (&msg);
+          << msg.GetSize() << " bytes.";
   }
 }
 

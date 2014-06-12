@@ -18,6 +18,7 @@
 #include "zmqprotoCommon.h"
 #include "zmqprotoContext.h"
 #include "zmqprotoDirectory.h"
+#include "zmqprotoMessage.h"
 #include "zmqprotoSocket.h"
 
 using namespace std;
@@ -72,13 +73,10 @@ void publishToFLP (zmqprotoSocket *fSocketPtr)
       msgpack::sbuffer sbuf;
       msgpack::pack (sbuf, ipVector);
 
-      zmq_msg_t msg;
-      zmq_msg_init_size (&msg, sbuf.size());
-      memcpy (zmq_msg_data (&msg), sbuf.data(), sbuf.size());
+      zmqprotoMessage msg (sbuf.size());
+      memcpy (msg.GetData(), sbuf.data(), sbuf.size());
 
       fSocketPtr->Send (&msg, "");
-      
-      zmq_msg_close (&msg);
     }
   }
 }
@@ -89,22 +87,20 @@ void receiveFromEPN (zmqprotoSocket *fSocketPtr)
   fSocketPtr->Bind (EPNIPAddr);
   
   while (1) {
-    zmq_msg_t msg;
-    zmq_msg_init (&msg);
+    zmqprotoMessage msg;
     fSocketPtr->Receive (&msg, "");
     
-    PRINT << "Received a message with a size of " << zmq_msg_size (&msg);
+    PRINT << "Received a message with a size of " << msg.GetSize();
     
     //If the IP is unknown, add it to the IP vector
-    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(zmq_msg_data (&msg)));
+    ipVectorIter = find (ipVector.begin(), ipVector.end(), reinterpret_cast<char *>(msg.GetData()));
     
     if ( ipVectorIter == ipVector.end() ) {
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
-      ipVector.push_back (reinterpret_cast<char *>(zmq_msg_data (&msg)));
+      ipVector.push_back (reinterpret_cast<char *>(msg.GetData()));
 
       PRINT << "Unknown IP, adding it to vector. Total IPs: " << ipVector.size();
     }
-    zmq_msg_close (&msg);
   }
 }
 

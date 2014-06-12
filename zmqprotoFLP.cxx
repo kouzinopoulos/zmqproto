@@ -12,6 +12,7 @@
 #include "zmqprotoCommon.h"
 #include "zmqprotoContext.h"
 #include "zmqprotoFLP.h"
+#include "zmqprotoMessage.h"
 #include "zmqprotoSocket.h"
 
 using namespace std;
@@ -76,15 +77,14 @@ void subscribeToDirectory (zmqprotoSocket *fSocketPtr)
     //Connect to directory each time to get the updated vector
     fSocketPtr->Connect (directoryIPAddr);
     
-    zmq_msg_t msg;
-    zmq_msg_init (&msg);
+    zmqprotoMessage msg;
     int retVal = fSocketPtr->Receive (&msg, "");
     
     //If a message was received, unpack it
     if (retVal) {
       // Deserialize received message
       msgpack::unpacked unpacked;
-      msgpack::unpack (&unpacked, reinterpret_cast<char *>(zmq_msg_data (&msg)), zmq_msg_size (&msg));
+      msgpack::unpack (&unpacked, reinterpret_cast<char *>(msg.GetData()), msg.GetSize());
       
       msgpack::object obj = unpacked.get();
       obj.convert (&ipVectorRecv);
@@ -96,10 +96,8 @@ void subscribeToDirectory (zmqprotoSocket *fSocketPtr)
         updatedVector = true;
       }
     
-      PRINT << "FLP: Received a vector with " << ipVector.size() << " IPs from the directory node";
+      PRINT << "Received a vector with " << ipVector.size() << " IPs from the directory node";
     }
-    zmq_msg_close (&msg);
-  
     boost::this_thread::sleep (boost::posix_time::seconds(5));
   }
 }
@@ -120,6 +118,7 @@ void pushToEPN (zmqprotoSocket *fSocketPtr, int fEventSize)
   while (1) {
    //If there are connected EPNs, push data to them
     if ( ipVector.size() > 0 ) {
+      PRINT << "Pushing data to EPNs";
       
       //Only (re)connect to the EPN nodes when the ip vector was updated
       if (updatedVector) {
@@ -132,10 +131,9 @@ void pushToEPN (zmqprotoSocket *fSocketPtr, int fEventSize)
         connectedEPNs = ipVector.size();
       }
       
-      zmq_msg_t msg;
-      zmq_msg_init_size (&msg, fEventSize * sizeof(Content));
+      zmqprotoMessage msg (fEventSize * sizeof(Content));
       
-      memcpy (zmq_msg_data (&msg), payload, fEventSize * sizeof(Content));
+      memcpy (msg.GetData(), payload, fEventSize * sizeof(Content));
       fSocketPtr->Send (&msg, "");
       
       PRINT << "Sent message " << (&payload[0])->id << " to EPN. Message size: "
@@ -143,8 +141,6 @@ void pushToEPN (zmqprotoSocket *fSocketPtr, int fEventSize)
       
       //Increase the event ID
       (&payload[0])->id++;
-      
-      zmq_msg_close (&msg);
     }
   }
 }

@@ -1,6 +1,9 @@
+#include <zmq.h>
+
 #include <iostream>
 #include <sstream>
 
+#include "zmqprotoCommon.h"
 #include "zmqprotoContext.h"
 #include "zmqprotoSocket.h"
 
@@ -20,17 +23,17 @@ zmqprotoSocket::zmqprotoSocket (void* fContext, const string& type, int num) :
 
   int rc = zmq_setsockopt(fSocket, ZMQ_IDENTITY, &fId, fId.length());
   if (rc != 0) {
-    cout << "failed setting socket option, reason: " << zmq_strerror(errno) << endl;
+    PRINT << "Failed setting socket option, reason: " << zmq_strerror(errno);
   }
   
   if (type == "sub") {
     rc = zmq_setsockopt(fSocket, ZMQ_SUBSCRIBE, NULL, 0);
     if (rc != 0) {
-      cout << "failed setting socket option, reason: " << zmq_strerror(errno) << endl;
+      PRINT << "Failed setting socket option, reason: " << zmq_strerror(errno);
     }
   }
 
-  cout << "created socket #" << fId << endl;
+  PRINT << "Created socket #" << fId;
 }
 
 unsigned long zmqprotoSocket::GetBytesTx()
@@ -61,7 +64,7 @@ void zmqprotoSocket::Close()
 
   int rc = zmq_close (fSocket);
   if (rc != 0) {
-    cout << "failed closing socket, reason: " << zmq_strerror(errno) << endl;
+    PRINT << "Failed closing socket, reason: " << zmq_strerror(errno);
   }
 
   fSocket = NULL;
@@ -72,9 +75,9 @@ void* zmqprotoSocket::GetSocket()
   return fSocket;
 }
 
-size_t zmqprotoSocket::Send(zmq_msg_t *msg, const string& flag)
+size_t zmqprotoSocket::Send (zmqprotoMessage *msg, const string& flag)
 {
-  int nbytes = zmq_msg_send (msg, fSocket, GetConstant(flag));
+  int nbytes = zmq_msg_send (static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
   if (nbytes >= 0){
     fBytesTx += nbytes;
     ++fMessagesTx;
@@ -83,14 +86,14 @@ size_t zmqprotoSocket::Send(zmq_msg_t *msg, const string& flag)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  cout << "failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno) << endl;
+  PRINT << "Failed sending on socket #" << fId << ", reason: " << zmq_strerror(errno);
   return nbytes;
   
 }
 
-size_t zmqprotoSocket::Receive(zmq_msg_t *msg, const string& flag)
+size_t zmqprotoSocket::Receive (zmqprotoMessage *msg, const string& flag)
 {
-  int nbytes = zmq_msg_recv (msg, fSocket, GetConstant(flag));
+  int nbytes = zmq_msg_recv (static_cast<zmq_msg_t*>(msg->GetMessage()), fSocket, GetConstant(flag));
   if (nbytes >= 0){
     fBytesRx += nbytes;
     ++fMessagesRx;
@@ -99,27 +102,27 @@ size_t zmqprotoSocket::Receive(zmq_msg_t *msg, const string& flag)
   if (zmq_errno() == EAGAIN){
     return false;
   }
-  cout << "failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno) << endl;
+  PRINT << "Failed receiving on socket #" << fId << ", reason: " << zmq_strerror(errno);
   return nbytes;
 }
 
-void zmqprotoSocket::Bind(const string& address)
+void zmqprotoSocket::Bind (const string& address)
 {
-//  cout << "bind socket " << fId << " on " << address << endl;
+  PRINT << "Binding socket " << fId << " on " << address;
 
   int rc = zmq_bind (fSocket, address.c_str());
   if (rc != 0) {
-    cout << "failed binding socket #" << fId << ", reason: " << zmq_strerror(errno) << endl;
+    PRINT << "Failed binding socket #" << fId << ", reason: " << zmq_strerror(errno);
   }
 }
 
 void zmqprotoSocket::Connect(const string& address)
 {
-//  cout << "connect socket #" << fId << " on " << address << endl;
+  PRINT << "Connecting socket #" << fId << " on " << address;
 
   int rc = zmq_connect (fSocket, address.c_str());
   if (rc != 0) {
-    cout << "failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno) << endl;
+    PRINT << "Failed connecting socket #" << fId << ", reason: " << zmq_strerror(errno);
   }
 }
 
