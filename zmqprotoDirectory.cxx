@@ -28,6 +28,8 @@ char FLPIPAddr[30], EPNIPAddr[30];
 vector<string>ipVector;
 vector<string>::iterator ipVectorIter;
 
+boost::mutex mtx_;
+
 void Log (zmqprotoSocket *frontendPtr, zmqprotoSocket *backendPtr)
 {
   unsigned long bytesTx = 0;
@@ -74,7 +76,10 @@ void publishToFLP (zmqprotoSocket *fSocketPtr)
       msgpack::pack (sbuf, ipVector);
 
       zmqprotoMessage msg (sbuf.size());
+      
+      mtx_.lock();
       memcpy (msg.GetData(), sbuf.data(), sbuf.size());
+      mtx_.unlock();
 
       fSocketPtr->Send (&msg, "");
     }
@@ -97,7 +102,9 @@ void receiveFromEPN (zmqprotoSocket *fSocketPtr)
     
     if ( ipVectorIter == ipVector.end() ) {
       //FIXME: performance wise is better to allocate big blocks of memory for the vector instead of element-by-element with each push_back()
+      mtx_.lock();
       ipVector.push_back (reinterpret_cast<char *>(msg.GetData()));
+      mtx_.unlock();
 
       PRINT << "Unknown IP, adding it to vector. Total IPs: " << ipVector.size();
     }
